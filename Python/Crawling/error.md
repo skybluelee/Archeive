@@ -14,7 +14,7 @@ down_bar = content_detail.find_element(By.CLASS_NAME, "ui-dialog-content.ui-widg
 ```
 이 경우 빈칸을 `.`로 대체하여 해결할 수 있다.
 ## iframe
-iframe은 같은 인터넷 창에 존재하지만 또다른 html 문서를 삽입한 형태로 iframe내로 진입하고자 하면 `NoSuchElementException` 오류가 발생한다.
+세번째 경우는 iframe으로 ifrmae은 같은 인터넷 창에 존재하지만 또다른 html 문서를 삽입한 형태로 iframe내로 진입하고자 하면 `NoSuchElementException` 오류가 발생한다.
 ```
 <iframe name="iframeDialog" id="iframeDialog" frameborder="0" class="ui-dialog-content ui-widget-content" style="overflow: auto; padding: 0px 0px 10px; margin: 0px; width: 100%; min-height: 0px; max-height: none; height: 719.797px;" title="팝업" tabindex="0"></iframe>
     #document
