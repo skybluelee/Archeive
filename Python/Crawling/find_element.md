@@ -24,3 +24,21 @@ driver.find_element(By.XPATH, 'xpath')
 		<h2 id="title_area" class="media_end_head_headline"><span>전북지사 "잼버리 통해 수십조 SOC 구축 등 허위사실 강경 대처"</span></h2>
 	</div>
 ``` 
+CLASS_NAME, ID는 `class="" , id=""` 인 경우에 사용한다. 
+```
+title_area = total.find_element(By.CLASS_NAME, "newsct_wrapper._GRID_TEMPLATE_COLUMN._STICKY_CONTENT")
+title_info = title_area.find_element(By.CLASS_NAME, "media_end_head_title")
+title = title_info.text
+
+title = '전북지사 "잼버리 통해 수십조 SOC 구축 등 허위사실 강경 대처"'
+```
+
+`find_elements` 를 사용하는 경우 해당 값의 type은 list이다.
+```
+inde_txt = printArea.find_elements(By.CLASS_NAME, "inde_txt")
+print(type(inde_txt))
+
+list
+```
+
+CLASS_NAME, ID뿐 아니라 모든 변수가 WebElement이므로 알맞게 데이터를 바꾸어야 한다(ex .text).
