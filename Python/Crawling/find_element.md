@@ -38,7 +38,8 @@ list
 
 CLASS_NAME, ID뿐 아니라 모든 변수가 WebElement이므로 알맞게 데이터를 바꾸어야 한다(ex .text).
 # CSS_SELECTOR, TAG_NAME
-`<ul>, <li>, <span>, <a>, <thead>, <tbody>, <tr>` 등에 사용
+`<ul>, <li>, <span>, <a>, <thead>, <tbody>, <tr>` 등에 사용한다.
+
 CSS_SELECTOR, TAG_NAME의 동작 원리는 동일하며 해당 line의 첫 태그를 사용한다. 이때 CSS_SELECTOR와 다른 점은 tag를 이어서 사용 가능하다.
 ```
 <div class="cal_bottom" data-month="08" data-year="2023">
