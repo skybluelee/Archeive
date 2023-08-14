@@ -1,15 +1,20 @@
-# iframe
-iframe은 같은 인터넷 창에 존재하지만 또다른 html 문서를 삽입한 형태로 iframe내로 진입하고자 하면 `NoSuchElementException` 오류가 발생한다.
+# image 다운로드
+image는 특정 링크에 존재하는 정보를 화면에 나타내는 방식이다. 해당 링크를 추출하고 링크의 내용을 다운받으면 이미지를 다운받을 수 있다.
 ```
-<iframe name="iframeDialog" id="iframeDialog" frameborder="0" class="ui-dialog-content ui-widget-content" style="overflow: auto; padding: 0px 0px 10px; margin: 0px; width: 100%; min-height: 0px; max-height: none; height: 719.797px;" title="팝업" tabindex="0"></iframe>
-    #document
-        <!DOCTYPE html>
+...
+<span class="gd_img" style="transform: translate3d(0px, 0px, 0px);">
+    <em class="imgBdr">
+        <span id="dImg" class="thumbBArea"></span>
+        <img class="gImg" src="https://image.yes24.com/goods/120466973/XL" alt="호랭면 " border="0">
+    </em>
+    <!-- 스티커 : 직배송 할인 & 포스터 -->
     ...
 ```
-iframe 형태는 위와 같다. iframe name, id가 존재하고 `<!DOCTYPE html>`에서 iframe의 존재를 확인할 수 있다.
-
-이 문제는 iframe 전환을 통해 해결할 수 있다.
 ```
-driver.switch_to.frame("<iframe name> or <iframe id>") # iframe으로 전환
-driver.switch_to.default_content() # iframe 나가기
+img_folder = './img'
+yes = driver.find_element(By.ID, "yDetailTopWrap")
+info = yes.find_element(By.CLASS_NAME, "topColLft")
+intro = info.find_element(By.CLASS_NAME, "gd_imgArea")
+imgs = intro.find_element(By.CSS_SELECTOR, "span > em > img").get_attribute("src")
+urllib.request.urlretrieve(imgs, f'./img/{name}.jpg')
 ```
