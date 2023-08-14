@@ -54,7 +54,7 @@ CSS_SELECTOR, TAG_NAME의 동작 원리는 동일하며 해당 line의 첫 태�
 		<li data-val="08" class="active"><button type="button"><span class="blind">2019년</span>8</button><b class="blind">현재 선택된 달</b></li>
 		<li data-val="09"><button type="button"><span class="blind">2019년</span>9</button></li>
 		<li data-val="10"><button type="button"><span class="blind">2019년</span>10</button></li>
-	<li data-val="11"><button type="button"><span class="blind">2019년</span>11</button></li>
+		<li data-val="11"><button type="button"><span class="blind">2019년</span>11</button></li>
 		<li data-val="12"><button type="button"><span class="blind">2019년</span>12</button></li>
 	</ul>
 </div>
