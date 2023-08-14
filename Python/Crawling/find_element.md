@@ -12,12 +12,7 @@ driver.find_element(By.XPATH, 'xpath')
 # CLASS_NAME, ID
 ```
 <div class="newsct_wrapper _GRID_TEMPLATE_COLUMN _STICKY_CONTENT"><div id="ct" class="newsct" role="main">
-<div class="media_end_head go_trans">
-	<div class="media_end_head_top">
-		<a href="https://www.yna.co.kr/" class="media_end_head_top_logo">
-			<img src="https://mimgnews.pstatic.net/image/upload/office_logo/001/2020/09/15/logo_001_6_20200915184213.png" width="" height="32" alt="연합뉴스" title="연합뉴스" class="media_end_head_top_logo_img light_type">
-			<img src="https://mimgnews.pstatic.net/image/upload/office_logo/001/2020/09/15/dark_logo_001_6_20200915144859.png" width="" height="32" alt="연합뉴스" title="연합뉴스" class="media_end_head_top_logo_img dark_type">
-		</a>
+<div class="media_end_head go_trans">	
 	  ...
 	</div>
 	<div class="media_end_head_title">
@@ -42,3 +37,11 @@ list
 ```
 
 CLASS_NAME, ID뿐 아니라 모든 변수가 WebElement이므로 알맞게 데이터를 바꾸어야 한다(ex .text).
+# CSS_SELECTOR, TAG_NAME
+```
+<div class="media_end_head_top">
+		<a href="https://www.yna.co.kr/" class="media_end_head_top_logo">
+			<img src="https://mimgnews.pstatic.net/image/upload/office_logo/001/2020/09/15/logo_001_6_20200915184213.png" width="" height="32" alt="연합뉴스" title="연합뉴스" class="media_end_head_top_logo_img light_type">
+			<img src="https://mimgnews.pstatic.net/image/upload/office_logo/001/2020/09/15/dark_logo_001_6_20200915144859.png" width="" height="32" alt="연합뉴스" title="연합뉴스" class="media_end_head_top_logo_img dark_type">
+		</a>
+```
