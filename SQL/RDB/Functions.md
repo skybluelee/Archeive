@@ -411,6 +411,7 @@ FROM    s_customers;
 | France|     |    France|
 |    USA|   NV|        NV|
 +-------+-----+----------+
+```
 # 집합 연산자
 `UNION, UNION DISTINCT`는 중복 튜플 제거.
 
