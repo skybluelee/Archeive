@@ -203,6 +203,7 @@ SYSDATE과 NOW는 현재 시간에 대해 컨텍스트에 따라 문자형 혹�
 +-------------------+--------+-------------------+-------------------+--------+-------------------+
 ```
 차이점으로는 SYSDATE은 시스템의 현재 시각, NOW는 명령어가 실행 시작된 시각을 나타낸다.
+
 **현재 시간은 표준시간으로 나오므로 한국 시간으로 변경하기 위해서는 + 9HOUR가 필요하다**
 ### WEEKDAY
 ```
@@ -312,21 +313,101 @@ SELECT STR_TO_DATE('21,5,2013', '%d,%m,%Y') AS Trans_Date;
 ## 타입 변환 함수
 > 변환 가능 타입
 > **숫자형**: SIGNED[INTEGER], UNSIGNED[INTEGER], REAL, DOUBLE, FLOAT, DECIMAL
+> 
 > **문자형**: CHAR, CHAR(n)
+> 
 > **이진 문자형**: BINARY, BINARY(n)
+> 
 > **날짜형**: DATE, TIME, DATETIME
 
 > 변환 불가능 타입
 > **숫자형 중 정수형**: TYNYINT, SMALLINT, MEDIUMINT, INT, BIGINT
+> 
 > **문자형 중 가변문자형**: VARCHAR(n)
+> 
 > **문자형 중 텍스트형**: TYNYTEXT, TEXT, MEDIUMTEXT, LONGTEXT
+> 
 > **날짜형 중 일부**: TIMESTAMP, YEAR
 ### 표현식
 `CAST(expr AS datatype);`
 `CONVERT(expr, datatype);`
+
 AS 사용 여부의 차이.
 ## NULL 관련 함수
 `COALESCE(expr1, expr2, expr3, ...)`
 
+만약 COALESCE에 변수가 2개라면 MySQL의 `IFNULL(e1,e2)`, Oracle의 `NVL(e1,e2), SQL Server의 `ISNULL(e1,e2)`와 동일하다.
+
+변수가 3개 이상인 경우 expr1이 NULL이면 expr2 값을 넣고, expr2도 NULL이라면 expr3 값을 넣고, ... , exprn값을 리턴한다.
 ## 정규식 함수
+### Anchor
+`^`: 문자열의 시작점
+`$`: 문자열의 종료점
+### Character Set
+```
+Character Group  Meaning
+[:alnum:]        Alphanumeric
+[:cntrl:]        Control Character
+[:lower:]        Lower case character
+[:space:]        Whitespace
+[:alpha:]        Alphabetic
+[:digit:]        Digit
+[:print:]        Printable character
+[:upper:]        Upper Case Character
+[:blank:]        whitespace, tabs, ect
+[:graph:]        Printable and visible character
+[:punct:]        Punctuation
+[:xdigit:]       Extended Digit
+```
+### 특수 기능 문자
+- `-`: 문자의 범위 지정
+- `.`: 임의의 한 문자
+- `^`: NOT
+- `|`: OR
+- `(...)`: 괄호 안의 정규식을 한 단위로 취급
+### Modifier
+- `{n}`: 정확히 n회 반복
+- `{m, n}`: m부터 n회까지 반복 가능, 단 m < n
+- `a?`: a{0,1}, 0 혹은 1회
+- `a+`: a{1,}, 1회 이상 반복
+- `a*`: a{0,}, 0회 이상 반복
+### Character Escape
+`^, $, ., ?, +, *, {, }, [, ], (,)` 등 특수문자의 경우 \\를 추가
+
+ex) `\\.$`: .으로 끝나는 문자열
+### 정규식 함수의 종류
+`REGEXP_LIKE(expr, pattern[, <match_type>])`: 문자열 expr에서, 정규식 pattern과 일치하는 부분 문자열(substring)이 있는지 검사함. 존재하면 true (1), 존재하지 않으면 false (0)을 리턴함.
+```
+SELECT  name
+FROM    s_customers
+WHERE   REGEXP_LIKE(name, '^[A]');
+
++--------------------------+
+|                      name|
++--------------------------+
+|         Atelier graphique|
+|Australian Collectors, Co.|
++--------------------------+
+```
+A로 시작하는 name을 선택
+
+
+`REGEXP_INSTR(expr, pattern[, pos[, occurrence[, <match_type>]]])`: 문자열 expr에서, 정규식 pattern과 일치하는 부분 문자열의 시작 위치를 리턴함.
+
+`REGEXP_SUBSTR(expr, pattern[, pos[, occurrence[, <match_type>]]])`: 문자열 expr에서, 정규식 pattern과 일치하는 부분 문자열을 리턴함.
+
+`REGEXP_REPLACE(expr, pattern[, replace[, pos[, occurrence[,<match_type>]]]])`: 문자열 expr에서, 정규식 pattern과 일치하는 모든 부분 문자열을 대체 문자열로 수정함.
+
+`REGEXP_COUNT(expr, pattern[, pos[, occurrence[, <match_type>]]])`: 문자열 expr에서, 정규식 pattern과 일치하는 모든 부분 문자열의 개수를 리턴함.
 ## 논리 제어 함수
+`IF(<condition_expr>, then_result, else_result)`
+```
+SELECT  country, state, IF(country = 'USA', state, country) AS if_country
+FROM    s_customers;
+
++-------+-----+----------+
+|country|state|if_country|
++-------+-----+----------+
+| France|     |    France|
+|    USA|   NV|        NV|
++-------+-----+----------+
