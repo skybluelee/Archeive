@@ -287,5 +287,10 @@ SELECT  DATE_FORMAT(NOW(), '%Y-%m-%d %h:%i:%s %p') AS 12시간,
 - mode 3: 월요일부터 시작하는 주 (주의 시작이 1년의 첫 번째 월요일 또는 1월 4일 이후)
 ### GET_FORMAT
 ```
-GET_FORMAT(DATE,'USA'): %m.%d.%Y, GET_FORMAT(DATE,'JIS'): %m.%d.%Y, GET_FORMAT(DATE,'ISO'): %m.%d.%Y, GET_FORMAT(DATE,'EUR'): %m.%d.%Y, GET_FORMAT(DATE,'INTERNAL'): %m.%d.%Y, 
+GET_FORMAT(DATE,'USA'): %m.%d.%Y, GET_FORMAT(DATE,'JIS'): %Y-%m-%d, GET_FORMAT(DATE,'ISO'): %Y-%m-%d
+GET_FORMAT(DATE,'EUR'): %d.%m.%Y, GET_FORMAT(DATE,'INTERNAL'): %Y%m%d
+GET_FORMAT(DATETIME,'USA'): %Y-%m-%d %H.%i.%s, GET_FORMAT(DATETIME,'JIS'): %Y-%m-%d %H:%i:%s, GET_FORMAT(DATETIME,'ISO'): %Y-%m-%d %H:%i:%s
+GET_FORMAT(DATETIME,'EUR'): %Y-%m-%d %H.%i.%s, GET_FORMAT(DATETIME,'INTERNAL'): %Y%m%d%H%i%s
+GET_FORMAT(TIME,'USA'): %m.%d.%Y, GET_FORMAT(TIME,'JIS'): %Y-%m-%d, GET_FORMAT(TIME,'ISO'): %Y-%m-%d
+GET_FORMAT(TIME,'EUR'): %d.%m.%Y, GET_FORMAT(TIME,'INTERNAL'): %Y%m%d
 ```
