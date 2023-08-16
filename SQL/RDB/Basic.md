@@ -15,34 +15,3 @@ SQL 연산자: `BETWEEN a AND b, NOT BETWEEN a AND b, IN, NOT IN, LIKE, NOT LIKE
 LIKE은 문자열 내에 pattern과 일치하는 부분 문자열(Substring)이 있는지 검사한다.
 ## 집계 함수
 집계 함수는 WHERE 내부에서 사용 불가능
-# 집계 함수
-`COUNT, SUM, AVG, MIN, MAX, STDDEV, VARIAN, GROUP_CONCAT`
-`STDDEV`는 표준편차, `VARIAN`은 분산, `GROUP_CONCAT`은 NULL 값을 제외한 모든 컬럼 값을 `,`로 연결한 문자열 생성.
-## GROUP_CONCAT
-``` 
-SELECT  GROUP_CONCAT(city) AS cities
-FROM    s_offices;
-
-+------------------------------+
-|                        cities|
-+------------------------------+
-|San Francisco,Boston,NYC,Paris|
-+------------------------------+
-```
-```
-SELECT  GROUP_CONCAT(city ORDER BY city ASC SEPARATOR ', ') AS cities
-FROM    s_offices;
-
-+---------------------------------+
-|                           cities|
-+---------------------------------+
-|Boston, NYC, Paris, San Francisco|
-+---------------------------------+
-```
-## 중첩 불가
-```
-SELECT  AVG(COUNT(*))
-FROM    customers
-GROUP   BY country;
-```
-AVG, COUNT를 동시에 사용하므로 오류 발생.
