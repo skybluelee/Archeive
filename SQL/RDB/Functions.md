@@ -289,8 +289,44 @@ SELECT  DATE_FORMAT(NOW(), '%Y-%m-%d %h:%i:%s %p') AS 12시간,
 ```
 GET_FORMAT(DATE,'USA'): %m.%d.%Y, GET_FORMAT(DATE,'JIS'): %Y-%m-%d, GET_FORMAT(DATE,'ISO'): %Y-%m-%d
 GET_FORMAT(DATE,'EUR'): %d.%m.%Y, GET_FORMAT(DATE,'INTERNAL'): %Y%m%d
-GET_FORMAT(DATETIME,'USA'): %Y-%m-%d %H.%i.%s, GET_FORMAT(DATETIME,'JIS'): %Y-%m-%d %H:%i:%s, GET_FORMAT(DATETIME,'ISO'): %Y-%m-%d %H:%i:%s
-GET_FORMAT(DATETIME,'EUR'): %Y-%m-%d %H.%i.%s, GET_FORMAT(DATETIME,'INTERNAL'): %Y%m%d%H%i%s
-GET_FORMAT(TIME,'USA'): %m.%d.%Y, GET_FORMAT(TIME,'JIS'): %Y-%m-%d, GET_FORMAT(TIME,'ISO'): %Y-%m-%d
-GET_FORMAT(TIME,'EUR'): %d.%m.%Y, GET_FORMAT(TIME,'INTERNAL'): %Y%m%d
+
+GET_FORMAT(DATETIME,'USA'): %Y-%m-%d %H.%i.%s, GET_FORMAT(DATETIME,'JIS'): %Y-%m-%d %H:%i:%s
+GET_FORMAT(DATETIME,'ISO'): %Y-%m-%d %H:%i:%sGET_FORMAT(DATETIME,'EUR'): %Y-%m-%d %H.%i.%s
+GET_FORMAT(DATETIME,'INTERNAL'): %Y%m%d%H%i%s
+
+GET_FORMAT(TIME,'USA'): %h:%i:%s %p, GET_FORMAT(TIME,'JIS'): %H:%i:%s, GET_FORMAT(TIME,'ISO'): %H:%i:%s
+GET_FORMAT(TIME,'EUR'): %H.%i.%s, GET_FORMAT(TIME,'INTERNAL'): %H%i%s
 ```
+### STR_TO_DATE
+`STR_TO_DATE(string, '<format>');`
+```
+SELECT STR_TO_DATE('21,5,2013', '%d,%m,%Y') AS Trans_Date;
+
++-------------------+
+|         Trans_Date|
++-------------------+
+|2013-05-21 00:00:00|
++-------------------+
+```
+문자열을 날짜/시간 타입으로 변환함.
+## 타입 변환 함수
+> 변환 가능 타입
+> **숫자형**: SIGNED[INTEGER], UNSIGNED[INTEGER], REAL, DOUBLE, FLOAT, DECIMAL
+> **문자형**: CHAR, CHAR(n)
+> **이진 문자형**: BINARY, BINARY(n)
+> **날짜형**: DATE, TIME, DATETIME
+
+> 변환 불가능 타입
+> **숫자형 중 정수형**: TYNYINT, SMALLINT, MEDIUMINT, INT, BIGINT
+> **문자형 중 가변문자형**: VARCHAR(n)
+> **문자형 중 텍스트형**: TYNYTEXT, TEXT, MEDIUMTEXT, LONGTEXT
+> **날짜형 중 일부**: TIMESTAMP, YEAR
+### 표현식
+`CAST(expr AS datatype);`
+`CONVERT(expr, datatype);`
+AS 사용 여부의 차이.
+## NULL 관련 함수
+`COALESCE(expr1, expr2, expr3, ...)`
+
+## 정규식 함수
+## 논리 제어 함수
