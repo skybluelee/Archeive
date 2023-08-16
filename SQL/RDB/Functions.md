@@ -179,3 +179,113 @@ http://www.example.com/landing-page?utm_source=google&utm_medium=email&utm_campa
 ## 날짜형 함수
 `SYSDATE, NOW, DATE, TIME, TIMESTAMP, YEAR, QUARTER, MONTH, MONTHNAME, DAY, DAYNAME, WEEKDAY, TIME, HOUR, MINUTE, SECOND, TIMESTAMPDIFF, DATE_FORMAT, GET_FORMAT, STR_TO_DATE`
 
+`DATE`는 년-월-일로 시간을 변형
+
+`TIME`은 시:분:초로 시간을 변형
+
+`MONTHNAME, DAYNAME`은 결과가 TEXT임
+### SYSDATE, NOW
+```
+SELECT NOW(), NOW() + 0, NOW() + 0.00, SYSDATE(), SYSDATE() + 0, SYSDATE() + 0.00;
+
++-------------------+--------------+-----------------+-------------------+--------------+-----------------+
+|    NOW()|               NOW() + 0|     NOW() + 0.00|          SYSDATE()| SYSDATE() + 0| SYSDATE() + 0.00|
++-------------------+--------------+-----------------+-------------------+--------------+-----------------+
+|2023-08-16 10:26:03|20230816102603|20230816102603.00|2023-08-16 10:26:03|20230816102603|20230816102603.00|
++-------------------+--------------+-----------------+-------------------+--------------+-----------------+
+```
+SYSDATE과 NOW는 현재 시간에 대해 컨텍스트에 따라 문자형 혹은 숫자형으로 출력한다.
+```
++-------------------+--------+-------------------+-------------------+--------+-------------------+
+|              NOW()|SLEEP(5)|              NOW()|          SYSDATE()|SLEEP(5)|          SYSDATE()|
++-------------------+--------+-------------------+-------------------+--------+-------------------+
+|2023-08-16 10:29:05|       0|2023-08-16 10:29:05|2023-08-16 10:29:10|       1|2023-08-16 10:29:10|
++-------------------+--------+-------------------+-------------------+--------+-------------------+
+```
+차이점으로는 SYSDATE은 시스템의 현재 시각, NOW는 명령어가 실행 시작된 시각을 나타낸다.
+**현재 시간은 표준시간으로 나오므로 한국 시간으로 변경하기 위해서는 + 9HOUR가 필요하다**
+### WEEKDAY
+```
+SELECT  CASE WEEKDAY(birthDate)
+                WHEN 0 THEN '월'
+                WHEN 1 THEN '화'
+                WHEN 2 THEN '수'
+                WHEN 3 THEN '목'
+                WHEN 4 THEN '금'
+                WHEN 5 THEN '토'
+                WHEN 6 THEN '일'
+        END AS dayIndex1_0_Mon,
+        CASE DAYOFWEEK(birthDate)
+                WHEN 1 THEN '월'
+                WHEN 2 THEN '화'
+                WHEN 3 THEN '수'
+                WHEN 4 THEN '목'
+                WHEN 5 THEN '금'
+                WHEN 6 THEN '토'
+                WHEN 7 THEN '일'
+        END AS dayIndex1_0_Mon,
+        CASE DATE_FORMAT(birthDate, '%w')
+                WHEN 0 THEN '일'
+                WHEN 1 THEN '월'
+                WHEN 2 THEN '화'
+                WHEN 3 THEN '수'
+                WHEN 4 THEN '목'
+                WHEN 5 THEN '금'
+                WHEN 6 THEN '토'
+        END AS dayIndex2_0_Sun,
+```
+WEEKDAY는 요일을 숫자로 출력한다.
+### INTERVAL
+TIMESTAMP의 경우 +, - 연산이 불가능하다.
+```
+SELECT DATE(NOW()) + INTERVAL 5 YEAR, DATE(NOW()) + INTERVAL 5 MONTH, DATE(NOW()) + INTERVAL 5 DAY
+
++-----------------------------+------------------------------+----------------------------+
+|DATE(NOW()) + INTERVAL 5 YEAR|DATE(NOW()) + INTERVAL 5 MONTH|DATE(NOW()) + INTERVAL 5 DAY|
++-----------------------------+------------------------------+----------------------------+
+|          2028-08-16 00:00:00|           2024-01-16 00:00:00|         2023-08-21 00:00:00|
++-----------------------------+------------------------------+----------------------------+
+```
+### TIMESTAMPDIFF
+`TIMESTAMPDIFF(<unit>, begin, end)` 형식으로 unit에는 `YEAR, HOUR, MINUTE, SECOND`가 존재
+```
+SELECT  TIMESTAMPDIFF(YEAR, '2000-08-02', '2021-05-15') AS 기준일전,
+        TIMESTAMPDIFF(YEAR, '2000-08-02', '2021-08-02') AS 기준일,
+        TIMESTAMPDIFF(YEAR, '2000-08-02', '2021-09-15') AS 기준일후;
+
++-------+------+-------+
+|기준일전|기준일|기준일후|
++-------+------+-------+
+|     20|   21|      21|
++-------+------+-------+
+```
+기준일이거나 기준일을 넘어야 카운트되고 기준일 전이라면 카운트되지 않는다.
+### DATE_FORMAT
+```
+SELECT  DATE_FORMAT(NOW(), '%Y-%m-%d %h:%i:%s %p') AS 12시간,
+        DATE_FORMAT(NOW(), '%Y, %M %D, %H:%i:%S') AS 24시간;
+
++-----------------------+--------------------------+
+|                 12시간|                     24시간|
++-----------------------+--------------------------+
+|2023-08-16 01:02:33 PM|2023, August 16th, 13:02:33|
++-----------------------+--------------------------+
+```
+```
+%a: 요일(Mon,Tue,Wed,...), %b: 월(Jan,Feb,Mar,...), %c: 월(0,1,2,...), %D: 일(0th,1st,2nd,3rd,...), %d: 일(00,01,..,31)
+%e: 일(0,1,..,31), %f: microsecond, %H: 시간(00,01,..23), %h: 시간(01,02,..12), %I: 시간(01,02,..12), %i: 분(00,01,..59)
+%j: 일(001,002,..,365), %k: 시간(0,1,..23), %l: 시간(1,2,..12), %M: 월(January,..,December), %m: 월(00,01,..,12)
+%p: AM,PM, %r: TIME 영역을 (hh:mm:ss AM or PM)로 변환, %S: 초(00,01,..59) 서순(1st,..), %s: 초(00,01,..59) 정수
+%T: TIME 영역을 24시간(hh:mm:ss)로 변환, %U: 주(00,01,..53 - 1년은 52 혹은 53주임) - WEEK() mode 0
+%u: 주(00,01,..53) - WEEK() mode 1, %V: 주(00,01,..53) - WEEK() mode 2, %v: 주(00,01,..53) - WEEK() mode 3
+%W: 요일(Sunday,..,Saturder), %w: 요일(0=Sunday,..,6=Saturday), %X: 연 - %V와 같이 사용, %x: 연 - %v와 같이 사용
+%Y: 연 - 4글자, %y: 연 - 2글자
+```
+- mode 0: 일요일부터 시작하는 주 (주의 시작이 1년의 첫 번째 일요일부터)
+- mode 1: 월요일부터 시작하는 주 (주의 시작이 1년의 첫 번째 월요일부터)
+- mode 2: 일요일부터 시작하는 주 (주의 시작이 1년의 첫 번째 일요일 또는 1월 4일 이후)
+- mode 3: 월요일부터 시작하는 주 (주의 시작이 1년의 첫 번째 월요일 또는 1월 4일 이후)
+### GET_FORMAT
+```
+GET_FORMAT(DATE,'USA'): %m.%d.%Y, GET_FORMAT(DATE,'JIS'): %m.%d.%Y, GET_FORMAT(DATE,'ISO'): %m.%d.%Y, GET_FORMAT(DATE,'EUR'): %m.%d.%Y, GET_FORMAT(DATE,'INTERNAL'): %m.%d.%Y, 
+```
