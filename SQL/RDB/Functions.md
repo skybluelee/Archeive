@@ -51,3 +51,44 @@ FROM    s_customers;
 +----------+-----------+-------------+
 ```
 Simple Case문의 경우 조건이 `=`로 고정된 상태이다.
+# LIKE
+```
+SELECT  LastName
+FROM    s_customers
+WHERE   LastName LIKE '%m%';
+
++--------+
+|LastName|
++--------+
+| Schmitt|
++--------+
+```
+해당하는 단어를 포함하는 값을 반환
+```
+SELECT  LastName
+FROM    s_customers
+WHERE   LastName LIKE 'm%';
+
++--------+
+|LastName|
++--------+
+|  Murphy|
+| Messner|
+...
++--------+
+```
+m으로 시작하는 문자열을 갖는 값을 반환
+```
+SELECT  LastName
+FROM    s_customers
+WHERE   LastName LIKE '%m';
+
++---------+
+| LastName|
++---------+
+|Pfalzheim|
+|   Graham|
+...
++---------+
+```
+m으로 끝나는 문자열을 갖는 값을 반환
