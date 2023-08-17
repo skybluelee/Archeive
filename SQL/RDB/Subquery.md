@@ -5,7 +5,10 @@
 - 조인은 두 테이블의 Cartesian Product의 부분 집합을 리턴함.
 - 연관 서브쿼리를 포함한 메인쿼리는 필터링을 통해 메인쿼리 테이블의 부분 집합을 리턴함.
 - 따라서 서브쿼리가 조인보다 성능이 좋음
+- 조인의 경우 테이블의 컬럼을 자유롭게 사용이 가능하나 서브쿼리의 경우 메인쿼리 테이블의 컬럼만 사용 가능.
 # WHERE 절 서브쿼리
+- 메인쿼리 테이블에 있는 튜플을 서브쿼리로 필터링함
+- 조인과 유사하나, 결과는 메인쿼리 테이블의 부분집합임
 ## 비연관 서브쿼리
 ### 단일값 서브쿼리
 ```
@@ -128,3 +131,79 @@ WHERE  productLine = 'Classic Cars' AND NOT EXISTS (
 ORDER BY 3 DESC, 2;
 ```
 **차집합 연산**: Classic Car인 동시에 가격이 200 미만인 상품을 리턴
+# SELECT 절 서브쿼리
+- 새로운 컬럼을 생성
+- 주로 집계 함수를 이용해 단일값을 구함
+```
+SELECT city, (
+                  SELECT COUNT(*)
+                  FROM employees Y
+                  WHERE Y.officeCode = X.officeCode
+              ) employee_num
+FROM   offices X
+ORDER  BY city;
+
++------+------------+
+|  city|employee_num|
++------+------------+
+|Boston|           2|
+| Paris|           5|
++------+------------+
+```
+# FROM 절 서브쿼리
+- 임시 테이블인 것 처럼 사용. WITH 절과 동일한 역할
+- 메인쿼리에서 inline view의 컬럼을 자유롭게 참조
+- ORDER BY 절을 자유롭게 사용
+```
+SELECT name, jobTitle
+FROM   (
+            SELECT city, CONCAT(firstName, ' ', lastName) name, jobTitle
+            FROM offices JOIN employees USING (officeCode)
+            ORDER BY name ASC
+       ) AS temp
+WHERE  city = 'San Francisco';
+```
+# HAVING 절 서브쿼리
+```
+SELECT  productLine 상품라인, AVG(buyPrice) '평균 구매단가'
+FROM    products
+GROUP   BY productLine
+HAVING  AVG(buyPrice) < (
+                            SELECT AVG(buyPrice) -- 단일값
+                            FROM products
+                            WHERE productLine ='Motorcycles'
+                        );
+```
+# 갱신문 서브쿼리
+## INSERT 문 서브쿼리
+```
+INSERT INTO employees (employeeId, lastName, firstName, extension, email, jobTitle, officeCode)
+VALUES ((
+        SELECT MAX(employeeId) + 1
+        FROM employees),
+        'Julia', 'Roberts', 'x1111', 'julia@gmail.com', 'Sales Rep', 1
+);
+```
+**MySQL에서는 동일 테이블에서 SELECT하여 INSERT/UPDATE 불가능**
+## DELETE 문 서브쿼리
+```
+DELETE
+FROM   employees
+WHERE  officeCode IN (
+                          SELECT officeCode -- 다중값 
+                          FROM offices
+                          WHERE country = 'USA' -- 비연관 
+                     );
+```
+## UPDATE 문 서브쿼리
+```
+ALTER TABLE offices
+ADD COLUMN noOfEmployees TINYINT;
+
+UPDATE offices O
+SET O.noOfEmployees = (
+                          SELECT COUNT(*) -- 단일값 
+                          FROM employees E
+                          WHERE E.officeCode = O.officeCode -- 연관 조건 
+                      );
+```
