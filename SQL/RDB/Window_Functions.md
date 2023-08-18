@@ -240,15 +240,132 @@ SELECT에서 ORDER BY를 사용하는 경우 윈도우 함수 내에서 정의�
 **ROW_NUMBER**
 - 파티션 내에서 현재 행에 일련번호를 부여(1부터 시작)
 - 테이블의 각 행에 일련 번호를 붙이거나, 테이블 출력시 pagination에 사용하거나, 파티션 별로 top-N행을 검색하는데 사용
-## RANK
-### PARTITION BY가 없음
+## RANK, DENSE_RANK
 ```
-SELECT	country, city, COUNT(customerId) no_customer,
+SELECT	country, COUNT(customerId) no_customer,
         RANK() OVER (
-                    ORDER BY COUNT(customerId) DESC
+                        ORDER BY COUNT(customerId) DESC
+                    ) AS rank_all,
+        RANK() OVER (
+                        ORDER BY COUNT(customerId) DESC
+                    ) AS dense_rank_all
+FROM    s_customers
+GROUP   BY country;
+
++-----------+-----------+--------+--------------+
+|    country|no_customer|rank_all|dense_rank_all|
++-----------+-----------+--------+--------------+
+|        USA|         36|       1|             1|
+|    Germany|         13|       2|             2|
+|     France|         12|       3|             3|
+|      Spain|          7|       4|             4|
+|         UK|          5|       5|             5|
+|  Australia|          5|       5|             5|
+|New Zealand|          4|       7|             6|
+|      Italy|          4|       7|             6|
+|...                                            |
++-----------+-----------+--------+--------------+
+```
+두 경우 모두 동점자를 처리하며 RANK의 경우 동점자 이후 갭이 존재하고, DENSE_RANK의 경우 동점자 이후 갭이 존재하지 않는 것을 확인할 수 있다.
+## ROW_NUMBER
+```
+SELECT  ROW_NUMBER() OVER (
+                        ORDER BY COUNT(customerId) DESC
+                    ) AS row_no,
+        country, COUNT(customerId) no_customer,
+        RANK() OVER (
+                        ORDER BY COUNT(customerId) DESC
                     ) AS rank_all
 FROM    s_customers
-GROUP 	BY country
-ORDER 	BY rank_all, country;
+GROUP   BY country;
+
++------+-----------+-----------+--------+
+|row_no|    country|no_customer|rank_all|
++------+-----------+-----------+--------+
+|     1|        USA|         36|       1|
+|     2|    Germany|         13|       2|
+|     3|     France|         12|       3|
+|     4|      Spain|          7|       4|
+|     5|         UK|          5|       5|
+|     6|  Australia|          5|       5|
+|     7|New Zealand|          4|       7|
+|     8|      Italy|          4|       7|
++------+-----------+-----------+--------+
 ```
-### PARTITION BY가 있음
+ROW_NUMBER는 동점자 처리 없는 것을 확인할 수 있다.
+### ROW_NUMBER - Pagination, Top-N
+```
+WITH temp AS
+(
+    SELECT  ROW_NUMBER() OVER (
+                        ORDER BY COUNT(customerId) DESC
+                        ) AS row_no,
+            country, COUNT(customerId) no_customer,
+            RANK() OVER (
+                        ORDER BY COUNT(customerId) DESC
+                        ) AS rank_all
+    FROM    s_customers
+    GROUP   BY country
+)
+SELECT  *
+FROM    temp
+WHERE   row_no BETWEEN 3 AND 7;
+/* TOP-N
+WHERE   row_no >= 5;
+*/
+
++------+-----------+-----------+--------+
+|row_no|    country|no_customer|rank_all|
++------+-----------+-----------+--------+
+|     3|     France|         12|       3|
+|     4|      Spain|          7|       4|
+|     5|         UK|          5|       5|
+|     6|  Australia|          5|       5|
+|     7|New Zealand|          4|       7|
++------+-----------+-----------+--------+
+```
+WHERE 내부에서는 윈도우 함수에서 얻은 컬럼을 참조할 수 없으므로 CTE를 사용하여 Pagination 및 Top-N 확인 가능.
+# 윈도우 함수 + 비율 함수
+## 함수 종류
+**PERCENT_RANK**
+- 파티션별로 현재 행의 percent rank 값을 리턴
+
+**CUME_DIST**
+- 파티션별로 현재 행의 cumulative distribution(누적 분포) 값을 리턴
+
+**NTILE**
+- 파티션을 N개의 버킷으로 나눔
+- 현재 행이 속한 버킷 번호를 리턴
+## PERCENT_RANK
+```
+SELECT  RANK() OVER (
+                                ORDER BY COUNT(customerId) DESC
+                    ) AS rnk,
+        country, city, COUNT(customerId) no_customer,
+        PERCENT_RANK() OVER (
+                                ORDER BY COUNT(customerId) DESC
+                            ) AS percentRank
+FROM    s_customers
+WHERE   country = 'France'
+GROUP   BY country, city
+ORDER   BY country, percentRank;
+
++------+-------+----------+-----------+-----------+
+|   rnk|country|      city|no_customer|percentRank|
++------+-------+----------+-----------+-----------+
+|     1| France|     Paris|          3|          0| -- 누적이 0
+|     2| France|    Nantes|          2|      0.125| -- (2 - 1) / (9 - 1) = 0.125
+|     3| France|      Lyon|          1|       0.25| -- (3 - 2) / (9 - 1) = 0.25
+|     3| France|     Lille|          1|       0.25|
+|     3| France|Strasbourg|          1|       0.25|
+|     3| France|  Toulouse|          1|       0.25|
+|...                                              |
++------+-------+----------+-----------+-----------+
+```
+전체 튜플 개수에 대한 순위의 누적 백분율을 나타냄
+
+공식: (RANK - 1) / (total_rows - 1)
+## CUME_DIST
+```
+
+```
