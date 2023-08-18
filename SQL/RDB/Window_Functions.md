@@ -229,15 +229,26 @@ SELECT에서 ORDER BY를 사용하는 경우 윈도우 함수 내에서 정의�
 **따라서 윈도우 함수로 생성한 컬럼 또한 지정해야 하며, 이 때문에 SELECT 문에서 ORDER BY 사용은 가급적 하지 않는다.**
 # 윈도우 함수 + 순위 함수
 ## 함수 종류
-RANK
+**RANK**
 - 파티션 내에서 현재 행의 순위를 리턴
 - 동점자에게 같은 순위를 주며, 이 경우 다음 순위의 동점자 에게 갭이 발생(1등이 2명이면 다음은 3등부터 시작)
 
-DENSE_RANK
+**DENSE_RANK**
 - 파티션 내에서 현재 행의 순위를 리턴
 - 동점자에게 같은 순위를 주며, 이 경우 다음 순위는 갭 없이 연속적으로 이어짐
 
-ROW_NUMBER
+**ROW_NUMBER**
 - 파티션 내에서 현재 행에 일련번호를 부여(1부터 시작)
 - 테이블의 각 행에 일련 번호를 붙이거나, 테이블 출력시 pagination에 사용하거나, 파티션 별로 top-N행을 검색하는데 사용
 ## RANK
+### PARTITION BY가 없음
+```
+SELECT	country, city, COUNT(customerId) no_customer,
+	      RANK() OVER (
+                        ORDER BY COUNT(customerId) DESC
+                    ) AS rank_all
+FROM 	  s_customers
+GROUP 	BY country
+ORDER 	BY rank_all, country;
+```
+### PARTITION BY가 있음
