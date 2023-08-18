@@ -566,7 +566,7 @@ grouping한 후에 해당 그룹, 해당 그룹의 합, 전체 합을 확인할 
 ## 집계 함수 + ROLLUP + GROUPING
 GROUPING 함수는 Super-aggreagte row에서 NULL 값을 출력하는 대신 의미있는 레이블을 출력함
 
-GROUPING 함수의 인자에 해당하는 값이 NULL이면 true(1)을 리턶고 NULL이 아니면 false(0)을 리턴
+GROUPING 함수의 인자에 해당하는 값이 NULL이면 true(1)을 리턴하고 NULL이 아니면 false(0)을 리턴
 ```
 SELECT  productLine, vendor, SUM(buyPrice), GROUPING(productLine), GROUPING(vendor)
 FROM	  s_products P
@@ -583,7 +583,7 @@ GROUP   BY productLine, vendor WITH ROLLUP;
 |  Classic Cars|                        |   65924.62|                    0|               1|
 |   Motorcycles|   Autoart Studio Design|    2626.67|                    0|               0|
 |   Motorcycles|           Exoto Designs|    1873.76|                    0|               0|
-|   Motorcycles|    Gearbox Collectibles|    	651.78|                    0|               0|
+|   Motorcycles|    Gearbox Collectibles|     651.78|                    0|               0|
 |...                                                                                       |
 |   Motorcycles|                        |   18254.99|                    0|               1|
 |...                                                                                       |
