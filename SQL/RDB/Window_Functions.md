@@ -551,7 +551,7 @@ GROUP   BY productLine, vendor WITH ROLLUP;
 |  Classic Cars|                        |   65924.62|
 |   Motorcycles|   Autoart Studio Design|    2626.67|
 |   Motorcycles|           Exoto Designs|    1873.76|
-|   Motorcycles|    Gearbox Collectibles|    	651.78|
+|   Motorcycles|    Gearbox Collectibles|     651.78|
 |...                                                |
 |   Motorcycles|                        |   18254.99|
 |...                                                |
