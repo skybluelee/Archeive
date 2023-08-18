@@ -604,10 +604,10 @@ GROUP   BY productLine WITH ROLLUP;
 |     productLine|total_price|
 +----------------+-----------+
 |    Classic Cars|   65924.62|
-|     Motorcycles|	 18254.99|
+|     Motorcycles|   18254.99|
 |          Planes|   16675.40|
 |           Ships|   11514.33|
-|          Trains|  	3557.79|
+|          Trains|    3557.79|
 |Trucks and Buses|   17349.36|
 |    Vintage Cars|   30233.62|
 |     productLine|  163510.11|
