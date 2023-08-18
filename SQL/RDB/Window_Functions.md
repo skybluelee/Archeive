@@ -298,11 +298,11 @@ ROW_NUMBER는 동점자 처리 없는 것을 확인할 수 있다.
 WITH temp AS
 (
     SELECT  ROW_NUMBER() OVER (
-                        ORDER BY COUNT(customerId) DESC
-                        ) AS row_no,
+                                  ORDER BY COUNT(customerId) DESC
+                              ) AS row_no,
             country, COUNT(customerId) no_customer,
             RANK() OVER (
-                        ORDER BY COUNT(customerId) DESC
+                            ORDER BY COUNT(customerId) DESC
                         ) AS rank_all
     FROM    s_customers
     GROUP   BY country
@@ -339,7 +339,7 @@ WHERE 내부에서는 윈도우 함수에서 얻은 컬럼을 참조할 수 없�
 ## PERCENT_RANK
 ```
 SELECT  RANK() OVER (
-                                ORDER BY COUNT(customerId) DESC
+                        ORDER BY COUNT(customerId) DESC
                     ) AS rnk,
         country, city, COUNT(customerId) no_customer,
         PERCENT_RANK() OVER (
@@ -367,5 +367,262 @@ ORDER   BY country, percentRank;
 공식: (RANK - 1) / (total_rows - 1)
 ## CUME_DIST
 ```
+SELECT  RANK() OVER (
+                        ORDER BY COUNT(customerId) DESC
+                    ) AS rnk,
+        country, city, COUNT(customerId) no_customer,
+        CUME_DIST() OVER (
+                                ORDER BY COUNT(customerId) DESC
+                            ) AS cumeDistribution
+FROM    s_customers
+WHERE   country = 'France'
+GROUP   BY country, city
+ORDER   BY country, percentRank;
 
++---+-------+----------+-----------+----------------+
+|rnk|country|      city|no_customer|cumeDistribution|
++---+-------+----------+-----------+----------------+
+|  1| France|     Paris|          3|0.11111111111111| -- 1 / 9 = 0.1111...
+|  2| France|    Nantes|          2|0.22222222222222| -- (1 + 1) / 9 = 0.2222...
+|  3| France|      Lyon|          1|               1| -- (1 + 1 + 7) / 9 = 1
+|  3| France|     Lille|          1|               1|
+|  3| France|Strasbourg|          1|               1|
+|  3| France|  Toulouse|          1|               1|
+|...                                                   |
++---+-------+----------+-----------+----------------+
 ```
+순위를 기준으로 한 튜플 개수의 누적 백분율
+
+공식: (처음부터 같은 등수까지의 튜플 개수) / total_rows
+## NTILE
+```
+SELECT  ROW_NUMBER() OVER (
+                                ORDER BY COUNT(customerId) DESC
+                          ) AS row_no,
+        country, city, COUNT(customerId) no_customer,
+        NTILE(2) OVER (
+                            ORDER BY COUNT(customerId) DESC
+                      ) AS tile_no
+FROM    s_customers
+WHERE   country = 'Spain'
+GROUP   BY country, city;
+
++------+-------+----------+-----------+-------+
+|row_no|country|      city|no_customer|tile_no|
++------+-------+----------+-----------+-------+
+|     1|  Spain|    Madrid|          5|      1|
+|     2|  Spain| Barcelona|          1|      1|
+|     3|  Spain|   Sevilla|          1|      2|
++------+-------+----------+-----------+-------+
+```
+```
+SELECT  ROW_NUMBER() OVER (
+                                ORDER BY COUNT(customerId) DESC
+                          ) AS row_no,
+        country, city, COUNT(customerId) no_customer,
+        NTILE(3) OVER (
+                            ORDER BY COUNT(customerId) DESC
+                      ) AS tile_no
+FROM    s_customers
+WHERE   country = 'Spain'
+GROUP   BY country, city;
+
++------+-------+----------+-----------+-------+
+|row_no|country|      city|no_customer|tile_no|
++------+-------+----------+-----------+-------+
+|     1|  Spain|    Madrid|          5|      1|
+|     2|  Spain| Barcelona|          1|      2|
+|     3|  Spain|   Sevilla|          1|      3|
++------+-------+----------+-----------+-------+
+```
+파티션을 N개 버킷으로 분할함
+# 윈도우 함수 + 행 순서 함수
+## 함수 종류 및 형식
+**FIRST_VALUE**
+- 파티션의 프레임 내에서 첫번째 행의 FIRST_VALUE 기준 컬럼 값
+
+**LAST_VALUE**
+- 파티션의 프레임 내에서 마지막 행의 FIRST_VALUE 기준 컬럼 값
+
+**LAG**
+- 파티션 내에서 현재 행에 뒤쳐진(lagging) 행, 즉 앞 행의 LAG 기준 컬럼 값
+
+**LEAD**
+- 파티션 내에서 현재 행에 앞선(leading) 행, 즉 앞 행의 LEAD 기준 컬럼 값
+
+**LAG, LEAD 형식**
+- LAG|LEAD (expr[, N[, default]])
+- 첫번째 인자: 기준 컬럼
+- 두번째 인자: 앞/뒤의 몇 번째 행을 가져올지 결정(디폴트는 1)
+- 세번째 인자: NULL인 경우 대체할 값. COALESCE와 동일
+## FIRST_VALUE
+```
+SELECT  name, country, city,
+        FIRST_VALUE(creditLimit) OVER
+        (
+            PARTITION BY country
+            ORDER BY creditLimit DESC
+        ) AS max_limit
+FROM    s_customers
+
++---------------------------------+---------+------------+---------+
+|                             name|  country|        city|max_limit|
++---------------------------------+---------+------------+---------+
+|       Australian Collectors, Co.|Australia|   Melbourne|117300.00|
+|          Anna's Decorations, Ltd|Australia|North Sydney|117300.00|
+|        Souveniers And Things Co.|Australia|   Chatswood|117300.00|
+|...                                                               |
+|           Saveley & Henriot, Co.|   France|        Lyon|123900.00|
+|                La Rochelle Gifts|   France|      Nantes|123900.00|
+|                Auto Canal+ Petit|   France|       Paris|123900.00|
+|...                                                               |
++---------------------------------+---------+------------+---------+
+```
+해당 파티션에 속한 컬럼의 첫번째 값으로 전부 통일됨
+## LAG
+```
+SELECT  name, country, city, creditLimit,
+        LAG(creditLimit) OVER 
+        (
+            ORDER BY creditLimit DESC
+        ) AS creditLimit_lag
+FROM    s_customers
+
++---------------------------------+-----------+------------+-----------+---------------+
+|                             name|    country|        city|creditLimit|creditLimit_lag|
++---------------------------------+-----------+------------+-----------+---------------+
+|           Euro+ Shopping Channel|      Spain|      Madrid|  227600.00|               |
+|     Mini Gifts Distributors Ltd.|        USA|  San Rafael|  210500.00|      227600.00|
+|                  Vida Sport, Ltd|Switzerland|      Genève|  141300.00|      210500.00|
+|               Muscle Machine Inc|        USA|         NYC|  138500.00|      141300.00|
+|                   AV Stores, Co.|         UK|  Manchester|  136800.00|      138500.00|
+|...                                                                                   |
++---------------------------------+-----------+------------+-----------+---------------+
+```
+디폴트 값으로는 한칸씩 값이 밀리는 것 확인
+```
+SELECT  name, country, city, creditLimit,
+        LAG(creditLimit, 2, 1000.00) OVER 
+        (
+            ORDER BY creditLimit DESC
+        ) AS creditLimit_lag
+FROM    s_customers
+
++---------------------------------+-----------+------------+-----------+---------------+
+|                             name|    country|        city|creditLimit|creditLimit_lag|
++---------------------------------+-----------+------------+-----------+---------------+
+|           Euro+ Shopping Channel|      Spain|      Madrid|  227600.00|        1000.00|
+|     Mini Gifts Distributors Ltd.|        USA|  San Rafael|  210500.00|        1000.00|
+|                  Vida Sport, Ltd|Switzerland|      Genève|  141300.00|      227600.00|
+|               Muscle Machine Inc|        USA|         NYC|  138500.00|      210500.00|
+|                   AV Stores, Co.|         UK|  Manchester|  136800.00|      141300.00|
+|...                                                                                   |
++---------------------------------+-----------+------------+-----------+---------------+
+```
+2칸씩 밀리고, NULL 값은 1000.00으로 대체됨
+# 그룹 함수
+## ROLLUP
+- GROUP BY 절에서만 사용하는 함수
+- 레벨별 통계치를 계산하는 함수
+  - 함수의 인자로 컬럼 리스트(grouping column list)를 가짐
+  - 컬럼이 N개면 N+1개의 grouping set을 생성하며, 각각의 grouping set에 대해 통계치를 계산
+    - L0: (C1, C2, C3) 소계
+    - L1: (C1, C2, *)  중계
+    - L2: (C1, *, *)   합계
+    - L3: (*, *, *)    총계
+  - L1, L2, L3에 해당하는 행을 super-aggregate row라 함
+- ROLLUP() 함수의 인자는 계층 구조를 형성
+- MySQL: `GROUP BY orderYear, productLine WITH ROLLUP;`
+- 표준 SQL: `GROUP BY ROLLUP(orderYear, productLine);`
+## 집계 함수 + ROLLUP
+```
+SELECT  productLine, vendor, SUM(buyPrice) AS total_price
+FROM	  s_products P
+        JOIN s_orderdetails O USING(productCode)
+GROUP   BY productLine, vendor WITH ROLLUP;
+
++--------------+------------------------+-----------+
+|   productLine|                  vendor|total_price|
++--------------+------------------------+-----------+
+|  Classic Cars|   Autoart Studio Design|    2574.18|
+|  Classic Cars|Carousel DieCast Legends|    2477.82|
+|  Classic Cars| Classic Metal Creations|   11005.61|
+|...                                                |
+|  Classic Cars|                        |   65924.62|
+|   Motorcycles|   Autoart Studio Design|    2626.67|
+|   Motorcycles|           Exoto Designs|    1873.76|
+|   Motorcycles|    Gearbox Collectibles|    	651.78|
+|...                                                |
+|   Motorcycles|                        |   18254.99|
+|...                                                |
+|              |                        |  163510.11|
++--------------+------------------------+-----------+
+```
+> L0: productLine, vendor
+> L1: productLine, *
+> L2: *, *
+
+grouping한 후에 해당 그룹, 해당 그룹의 합, 전체 합을 확인할 수 있음
+## 집계 함수 + ROLLUP + GROUPING
+GROUPING 함수는 Super-aggreagte row에서 NULL 값을 출력하는 대신 의미있는 레이블을 출력함
+
+GROUPING 함수의 인자에 해당하는 값이 NULL이면 true(1)을 리턶고 NULL이 아니면 false(0)을 리턴
+```
+SELECT  productLine, vendor, SUM(buyPrice), GROUPING(productLine), GROUPING(vendor)
+FROM	  s_products P
+        JOIN s_orderdetails O USING(productCode)
+GROUP   BY productLine, vendor WITH ROLLUP;
+
++--------------+------------------------+-----------+---------------------+----------------+
+|   productLine|                  vendor|total_price|GROUPING(productLine)|GROUPING(vendor)|
++--------------+------------------------+-----------+---------------------+----------------+
+|  Classic Cars|   Autoart Studio Design|    2574.18|                    0|               0|
+|  Classic Cars|Carousel DieCast Legends|    2477.82|                    0|               0|
+|  Classic Cars| Classic Metal Creations|   11005.61|                    0|               0|
+|...                                                                                       |
+|  Classic Cars|                        |   65924.62|                    0|               1|
+|   Motorcycles|   Autoart Studio Design|    2626.67|                    0|               0|
+|   Motorcycles|           Exoto Designs|    1873.76|                    0|               0|
+|   Motorcycles|    Gearbox Collectibles|    	651.78|                    0|               0|
+|...                                                                                       |
+|   Motorcycles|                        |   18254.99|                    0|               1|
+|...                                                                                       |
+|              |                        |  163510.11|                    1|               1|
++--------------+------------------------+-----------+---------------------+----------------+
+```
+### CASE를 사용한 NULL 제거
+```
+SELECT  CASE GROUPING(productLine)
+             WHEN 1 THEN 'productLine'
+             ELSE productLine
+        END AS productLine, SUM(buyPrice) AS total_price
+FROM	s_products P
+        JOIN s_orderdetails O USING(productCode)
+GROUP   BY productLine WITH ROLLUP;
+
++----------------+-----------+
+|     productLine|total_price|
++----------------+-----------+
+|    Classic Cars|   65924.62|
+|     Motorcycles|	 18254.99|
+|          Planes|   16675.40|
+|           Ships|   11514.33|
+|          Trains|  	3557.79|
+|Trucks and Buses|   17349.36|
+|    Vintage Cars|   30233.62|
+|     productLine|  163510.11|
++----------------+-----------+
+```
+## CUBE
+ROLLUP 함수의 확장으로 grouping column list의 모든 조합에 대해 통계치를 계산
+- 함수의 인자로 컬럼 리스트를 가짐
+- 컬럼이 N개면 2^N개의 grouping set을 생성하며, 각각의 grouping set에 대해 통계치를 계산함
+- GROUP BY CUBE(C1, C2, C3)라면
+  - L0: (C1, C2, C3) 소계
+  - L1: (C1, C2, *)  중계
+  - L1: (C1, C3, *)  중계
+  - L1: (C2, C3, *)  중계
+  - L2: (C1, *, *)   합계
+  - L2: (C2, *, *)   합계
+  - L2: (C3, *, *)   합계
+  - L3: (*, *, *)    총계
