@@ -244,10 +244,10 @@ SELECT에서 ORDER BY를 사용하는 경우 윈도우 함수 내에서 정의�
 ### PARTITION BY가 없음
 ```
 SELECT	country, city, COUNT(customerId) no_customer,
-RANK() OVER (
-ORDER BY COUNT(customerId) DESC
-) AS rank_all
-FROMs_customers
+        RANK() OVER (
+                    ORDER BY COUNT(customerId) DESC
+                    ) AS rank_all
+FROM    s_customers
 GROUP 	BY country
 ORDER 	BY rank_all, country;
 ```
