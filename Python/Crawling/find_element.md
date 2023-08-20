@@ -83,7 +83,7 @@ pub = "연합뉴스"
 tag_a = i.find_element(By.TAG_NAME, 'a')
 href = tag_a.get_attribute("href")
 ```
-위는 <a href="link">의 형태에서 링크를 추출하는 방법이다.
+위는 `<a href="link">`의 형태에서 링크를 추출하는 방법이다.
 ## thead, tbody
 표의 데이터를 수집하는 경우 `thead`에 표의 인덱스가 있고 `tbody`에 데이터가 존재하는 경우가 많다.
 ```
