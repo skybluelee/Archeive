@@ -12,6 +12,7 @@ RUN apk add --no-cache python3 g++ make
 WORKDIR /app
 COPY . .
 RUN yarn install --production
+
 CMD ["node", "src/index.js"]
 ```
 ```
@@ -193,8 +194,8 @@ ADD --chown=myuser:mygroup --chmod=655 files* /somedir/
 - 만약 `<src>`가 URL이고 `<dest>`가 트레일링 슬래쉬로 끝난다면, 파일 이름은 URL을 참조하고 파일이 `<dest>/<filename>` 경로로 다운된다.
 - 만약 `<src>`가 디렉토리라면, 해당 디렉토리의 메타데이터를 포함한 모든 파일이 복사된다.
 - 만약 `<src>`가 `.zip, .tar.gz, .tar.bz2, .tar, .tgz` 등의 압축 파일이라면, 압축 해제된어 디렉토리가 생성된다.
-- 만약 `<src>`가 파일이라면, 메타데이터를 따라 각각 복사된다. 이 경우 만약 `<dest>`가 트레일링 슬래쉬로 끝난다면, 디렉토리와 `<src>`의 파일이 `<dest>/base(<src>)`에 저장된다.
-- 만약 복수의 `<src>`가 특정되면, `<dest>`는 디렉토리여야 하며, 트레일링 슬래쉬로 끝나야 한다.
+- 만약 `<src>`가 파일이라면, 각각 메타데이터와 함께 복사된다. 이 경우 만약 `<dest>`가 트레일링 슬래쉬로 끝난다면, 디렉토리와 `<src>`의 파일이 `<dest>/base(<src>)`에 저장된다.
+- 만약 복수의 `<src>` 리소스가 직접적으로든, 와일드카드를 사용해서든, 특정되면, `<dest>`는 디렉토리여야 하며, 트레일링 슬래쉬로 끝나야 한다.
 - 만약 `<dest>`가 트레일링 슬래쉬로 끝나지 않는다면, 파일로 간주되고 `<src>`는 `<dest>`로 작성된다.
 - 먄약 `<dest>`가 존재하지 않는다면, 해당 경로에 있는 모든 누락된 디렉토리와 함께 <dest>가 생성된다.
 ## COPY
@@ -203,3 +204,118 @@ COPY [--chown=<user>:<group>] [--chmod=<perms>] <src>... <dest>
 COPY [--chown=<user>:<group>] [--chmod=<perms>] ["<src>",... "<dest>"]
 ```
 `COPY`는 2가지 형식이 존재한다.
+
+`COPY`는 새 파일이나 디렉토리를 `<src>`에서 복사해서 `<dest>` 경로에 있는 컨테이너 파일 시스템에 추가한다.
+
+여러 개의 `<src>` 리소스는 특정될 수 있으나, 파일의 경로와 디렉토리는 빌드 되는 디렉토리 기준으로 상대 경로이다.
+
+각 `<src>`는 와일드 카드를 포함하며, Go의 파일 경로와 동일한 방식을 사용한다.
+
+와일드 카드
+- *: 임의의 문자열을 나타내며, 모든 파일 또는 디렉토리와 일치한다.
+- ?: 임의의 하나의 문자와 일치한다.
+- [...]: 대괄호 안에 나열된 문자 중 하나와 일치한다.
+- {...}: 중괄호 안에 나열된 패턴 중 하나와 일치한다.
+  
+```
+ADD hom* /mydir/
+```
+`hom`으로 시작하는 모든 파일을 /mydir로 복사한다.
+
+`<dest>`는 절대 경로이거나 `WORKDIR`의 상대경로이며, `<src>`는 `<dest>` 컨테이너 내부로 복사된다.
+
+```
+ADD arr[[]0].txt /mydir/
+```
+만약 특수문자가 포함된 파일이나 디렉토리를 복사하고자 한다면, Golang 규칙을 적용하여 탈출하애 한다.
+예를 들어 파일이 `arr[0].text`라면 위와 같이 작성해야 한다.
+
+```
+ADD --chown=55:mygroup files* /somedir/
+ADD --chown=bin files* /somedir/
+ADD --chown=1 files* /somedir/
+ADD --chown=10:11 files* /somedir/
+ADD --chown=myuser:mygroup --chmod=655 files* /somedir/
+```
+`--chown` 플래그를 사용하여 사용자 이름, 그룹 이름, UID/GID 조합 등을 지정하지 않는다면 모든 새 파일과 디렉토리는 UID/GID가 0부터 생성된다.
+
+그룹 이름이나 UID 혹은 GID 없이 사용자 이름만 지정하는 경우 동일한 UID, GID를 얻게 된다.
+
+만약 사용자 이름 또는 그룹 이름이 주어진다면, 컨테이너의 root 파일 시스템 `/etc/passwd`와 `/etc/group` 파일은 이름을 UID, GID로 바꾸기 위해 사용될 것이다.
+
+만약 컨테이나 루트 파일 시스템이 `/etc/passwd`와 `/etc/group`를 포함하지 않고, 사용자 혹은 그룹 이름이 `--chown` 플래그를 사용중이라면, 빌드는 `ADD` 라인에서 실패할 것이다.
+
+추가로 `COPY`는 `--from=<name>` 플래그를 사용하는데 이는 이전 빌드 단계의 소스 위치를 설정하는데 사용할 수 있다.
+
+`COPY`는 아래의 규칙을 준수한다.
+- `<src>` 경로는 빌드되는 파일 내부에 존재해야 한다. 이는 도커 빌드의 첫 단계가 도커 데몬에게 파일 디렉토리를 전송하기 때문이다.
+- 만약 `<src>`가 디렉토리라면, 해당 디렉토리의 메타데이터를 포함한 모든 파일이 복사된다
+- 만약 `<src>`가 파일이라면, 각각 메타데이터와 함께 복사된다. 이 경우 만약 `<dest>`가 트레일링 슬래쉬로 끝난다면, 디렉토리와 `<src>`의 파일이 `<dest>/base(<src>)`에 저장된다.
+- 만약 복수의 `<src>` 리소스가 직접적으로든, 와일드카드를 사용해서든, 특정되면, `<dest>`는 디렉토리여야 하며, 트레일링 슬래쉬로 끝나야 한다.
+- 만약 `<dest>`가 트레일링 슬래쉬로 끝나지 않는다면, 파일로 간주되고 `<src>`는 `<dest>`로 작성된다.
+- 먄약 `<dest>`가 존재하지 않는다면, 해당 경로에 있는 모든 누락된 디렉토리와 함께 <dest>가 생성된다.
+## ENTRYPOINT
+```
+ENTRYPOINT ["executable", "param1", "param2"]
+
+ENTRYPOINT command param1 param2
+```
+`ENTRYPOINT`는 exec, shell의 2가지 형식이 존재한다.
+
+`ENTRYPOINT`는 사용자가 실행 프록르매을 동작할 컨테이너를 구성하도록 한다.
+```
+docker run -i -t --rm -p 80:80 nginx
+```
+예를 들면 위의 코드는 ngingx가 디폴트 컨텐트로, 80번 포트로 듣게 해준다.
+
+`docker run <image>` 명령어의 인자는 exec 형식의 `ENTRYPOINT`의 모든 원소를 사용되고, `CMD`를 사용하여 모든 원소를 덮어쓴다. 
+`docker run --entrypoint` 플래그를 사용하여 `ENTRYPOINT`를 쉽게 덮어쓸 수 있다.
+
+shell 형식은 `CMD` 혹은 `RUN` 명령어 인자가 사용되는 것을 막지만, `ENTRYPOINT`가 신호를 통과시키지 못하는 `/bin/sh -c`로 시작되는 단점이 있다.
+그 결과 SIGTERM을 받지 못하므로 엔트리 포인트는 컨테이너의 PID 1이 아니므로 유닉스 시그널을 받지 못하게 된다.
+
+마지막의 `ENTRYPOINT` 지시문만이 동작한다.
+## VOLUME
+```
+VOLUME ["/data"]
+```
+`VOLUME` 지시문은 특정 이름으로 마운트 포인트(파일 시스템에서 특정 디렉토리가 다른 파일 시스템 또는 저장 장치에 연결되어 있는 위치)를 생성하고, 기존 호스트나 컨테이너로부터 외부에서 마운트된 볼륨을 가지고 있다.
+
+값은 JSON 형태가 될 수 있으며(`VOLUME ["/var/log/"]`), 여러 인자를 갖는 일반 문자열일 수도 있다(`VOLUME /var/log or VOLUME /var/log /var/db`).
+```
+FROM ubuntu
+RUN mkdir /myvol
+RUN echo "hello world" > /myvol/greeting
+VOLUME /myvol
+```
+`docker run` 명령어는 새로 생성된 볼륨을 기존 이미지 위치에 존재하는 특정 데이터를 초기화한다.
+위 Dockerfile은 `/myvol`이라는 새로운 마운트 포인트를 생성하고 `greeting` 파일을 새로 생성된 볼륨으로 복사한다.
+## USER
+```
+USER <user>[:<group>]
+
+USER <UID>[:<GID>]
+```
+`USER` 지시문은 사용자 이름과 추가 사용자 그룹을 디폴트 사용자로 설정하기 위해 사용한다.
+```
+FROM microsoft/windowsservercore
+# Create Windows user in the container
+RUN net user /add patrick
+# Set it for subsequent commands
+USER patrick
+```
+## WORKDIR
+```
+WORKDIR /path/to/workdir
+```
+`WORKDIR` 지시문은 `RUN, CMD, ENTRYPOINT, COPY, ADD` 지시문이 동작하는 작업 디렉토리를 설정한다.
+
+만약 `WORKDIR`가 존재하지 않는다면, 자동으로 생성된다.
+
+`WORKDIR` 지시문은 한 Dockefile에서 여러번 사용될 수 있다. 만약 상대 경로가 주어진다면, 이전 `WORKDIR` 지시문 기준으로 경로를 탐색한다.
+## ARG
+```
+ARG <name>[=<default value>]
+```
+`ARG` 지시문은 `--build-arg <varname>=<value>`를 사용하여 `docker build` 명령어 내에서 사용자가 빌드하는 시간동안의 변수를 정의한다.
+만약 사용자가 Dockerfile에서 정의되지 않은 인자를 사용한다면 경고가 발생한다.
