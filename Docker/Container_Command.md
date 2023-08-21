@@ -1,12 +1,12 @@
-# 컨테이너 생성
+**컨테이너 생성**
 ```
 docker create <image>
 ```
-## 컨테이너 생성
+**컨테이너 생성 및 시작**
 ```
-docker create <image>
+docker run <image>
 ```
-### 컨테이너 생성
+**컨테이너 시작**
 ```
-docker create <image>
+docker start <container>
 ```
