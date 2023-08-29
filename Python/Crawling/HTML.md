@@ -156,6 +156,7 @@ HTML 문서에서 요소를 정의하는 데 사용되며, 각 태그에는 특�
 **`value`**
 - `value` 속성은 입력 필드`(<input>, <textarea>`)의 초기값을 설정하거나 사용자가 입력한 값을 가져올 때 사용된다.
 
+
 속성의 경우 `<a href="https://www.example.com" title="Example Website">Visit Example</a>`와 같이 여러 개의 속성을 사용할 수 있다.
 ## 계층 구조 (Hierarchy)
 HTML 요소는 중첩될 수 있으며, 계층 구조를 형성한다. 이것은 문서의 구조를 정의하고 부모-자식 관계를 나타내며, 이 계층 구조는 문서의 구조와 레이아웃을 정의하는 데 중요하다.
