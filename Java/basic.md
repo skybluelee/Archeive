@@ -39,3 +39,7 @@ Process finished with exit code 0
 결과는 위와 같다.
 
 단축키는 **shift + F10**
+## 주석
+- `/* ~ */`
+- Ctrl + `/` (주석 해제도 동일)
+- 
