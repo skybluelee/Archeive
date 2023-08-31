@@ -156,6 +156,15 @@ String emptyStr = "";
 `char`에는 공백은 올 수 있지만, 빈 문자는 올 수 없다.
 
 빈 문자는 `String`을 사용하여 생성할 수 있다.
+## 불리언 자료형
+### 부정 연산자
+```
+boolean bool3 = !true;   // false
+
+boolean bool5 = !!bool3; // false
+boolean bool6 = !!!bool3;// true
+```
+`!`를 사용하면 `not`, `!`의 개수만큼 반전된다. (-)연산과 동일하다.
 ## 단축어
 - `psvm` - 프로그램을 시작하는 메인 메서드
 - `sout` - 한 줄 프린트하기
