@@ -17,6 +17,7 @@ double pi = 3.141592
 ```
 char ch4 = 'A', ch5 = 'B', ch6 = 'C';
 ```
+동시에 선언 가능하다.
 ### 상수
 ```
 final int INT_NUM = 1;
@@ -65,6 +66,96 @@ int _4b_int2 = 123_456_789;
 long _8b_long2 = 123_456_789_123_456_789L;
 ```
 단위마다 , 대신에 `_`를 사용할 수 있다.
+### 명시적 형변환
+```
+byte byteNum;
+int smallIntNum = 123;
+
+// 명시적 형변환
+byteNum = (byte) smallIntNum;
+```
+강제로 큰 자료형을 작은 자료형으로 변형한다.
+
+`()`에는 기존에 설정한 자료형이 들어가야 하며, 작은 자료형 범위 밖의 숫자를 변환한다면 overflow가 발생한다.
+### 연산과 형 변환
+```
+int a = 1;
+int b = 2;
+int c = a + b; // 오류 X
+long d = a + b; // 오류 X
+
+short e = a + b; // 오류 발생. int -> short는 묵시적 형변환 불가
+short f = (short) a + b; // 오류 발생. 이 경우 a에만 명시적 형변환이 적용됨
+short g = (short) (a + b); // 오류 X
+```
+```
+byte b1 = 1;
+byte b2 = 2;
+short s1 = 1;
+short s2 = 2;
+
+// 전부 오류 발생
+byte b3 = b1 + b2;
+short s3 = b1 + b2;
+short s4 = b1 + s2;
+short s5 = s1 + s2;
+
+// 전부 오류 X
+int i1 = b1 + b2;
+int i2 = s1 + s2;
+int i3 = b1 + s1;
+```
+`byte, short`의 경우 연산 수행시 int로 연산하므로 같은 자료형임에도 연산이 불가능하다.
+## 실수 자료형
+### float
+```
+float flt1 = 3.14f;
+```
+`float`도 `long`과 마찬가지로 뒤에 float을 나타내는 `f`를 추가한다.
+
+이는 자바에서 기본적으로 `double` 형태로 인식하기 때문이다.
+### double vs float
+`double`이 `float`에 비해 범위도 넓고, 정밀도도 높다.
+### 연산
+```
+float flt01 = 4.124f;
+float flt02 = 4.125f;
+double dbl01 = 3.5;
+
+float flt03 = flt01 + flt02; // 오류 없음
+
+float flt04 = flt01 + dbl01; // 오류 발생
+float flt04 = float(flt01 + dbl01);
+double flt04 = flt01 + dbl01; 
+```
+`float`과 `double`을 동시에 연산하는 경우 `double`을 `float`으로 명시적 형 변환을 하거나, 큰 자료형인 `double`로 연산하는 방법이 있다.
+## 문자 자료형
+`short`와 동일하게 2바이트 사용한다.
+
+문자형 '1'과 숫자 1은 다르다. 연산이 제대로 수행되지 않는다.
+### 문자 번호
+```
+char ch5 = '가';     
+char ch6 = '가' + 1; // ch6: '각' 44033
+```
+각 문자별로 해당하는 값이 존재한다.
+### char -> int
+```
+int int_d1 = Character.getNumericValue('1');
+
+또는
+
+int int_d1 = '1' - '0';
+```
+### 빈 문자열
+```
+char empty = '';  // 오류 O
+char empty = ' '; // 오류 X
+String emptyStr = ""; 
+```
+`char`에는 공백은 올 수 있지만, 빈 문자는 올 수 없다.
+
+빈 문자는 `String`을 사용하여 생성할 수 있다.
 ## 단축어
 - `psvm` - 프로그램을 시작하는 메인 메서드
 - `sout` - 한 줄 프린트하기
