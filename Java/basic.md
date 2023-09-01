@@ -324,7 +324,7 @@ int int_a7 = str_a4.compareTo(str_a3); // int_a7 = 7
 int int_b2 = str_b1.compareToIgnoreCase(str_b2); // int_b2 = -3
 ```
 ### 대문자 소문자 변형
-`toUpperCase(), to LowerCase()`
+`toUpperCase(), toLowerCase()`
 
 ## 단축어
 - `psvm` - 프로그램을 시작하는 메인 메서드
