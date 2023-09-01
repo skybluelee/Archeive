@@ -165,7 +165,14 @@ boolean bool5 = !!bool3; // false
 boolean bool6 = !!!bool3;// true
 ```
 `!`를 사용하면 `not`, `!`의 개수만큼 반전된다. (-)연산과 동일하다.
-
+### 삼항 연산자
+`a ? b : c`
+`a`는 boolean 값이며, `a`가 true이면 `b`를 반환하고 `a`가 false이면 `c`를 반환한다.
+```
+int num1OE = num1 % 2 == 1 ? 1 : 2;
+char char1OE = num1 % 2 == 1 ? '홀' : '짝';
+```
+삼항 연산자의 경우 리턴 값의 자료형에 맞게 설정한다.
 ## 단축어
 - `psvm` - 프로그램을 시작하는 메인 메서드
 - `sout` - 한 줄 프린트하기
