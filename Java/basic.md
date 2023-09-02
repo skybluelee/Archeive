@@ -325,10 +325,145 @@ int int_b2 = str_b1.compareToIgnoreCase(str_b2); // int_b2 = -3
 ```
 ### 대문자 소문자 변형
 `toUpperCase(), toLowerCase()`
+### 이어붙이기
+```
+String str_b2 = str_b1 + true + 1 + 2.34 + '가';
 
+String str_b3 = str_b1.concat(true)
+                      .concat(1)
+                      .concat(2.34)
+                      .concat('가'); // 오류 발생
+```
+`+`를 사용하는 경우 자료형이 `String`이 아니어도 명시적으로 자료형이 변경된다.
+
+반면 `concat`을 사용하는 경우 `String` 자료형끼리만 이어붙일 수 있다.
+***
+```
+String str_c1 = null;
+String str_c3 = str_c1 + null + "ABC"; // str_c3: "nullnullABC"
+
+String str_c4 = str_c1.concat("ABC"); // 오류 발생
+```
+`+`를 사용하는 경우 null 값이 "null"로 변경되어 붙여진다.
+
+반면 `concat`을 사용하는 경우 null 값에 대해 오류가 발생한다.
+***
+```
+String str_d1 = "a" + "b" + "c" + "d";
+
+String str_d2 = new StringBuilder("a").append("b")
+                                      .append("c")
+                                      .append("d")
+                                      .toString();
+```
+`+`를 사용하는 경우 내부에서 `append`를 사용한다. 즉 하나의 객체만 존재한다.
+```
+String str_d3 = "a".concat("b") // "ab"가 생성됨
+                   .concat("c") // "abc"가 생성됨
+                   .concat("d"); // "abcd"가 생성됨
+```
+반면 `concat`을 사용하는 경우 사용할 때마다 새로운 객체를 생성한다.
+
+**일반적으로 `+`가 `concat`보다 성능이 좋다**
+### 반복
+```
+String str_a1 = "hello";
+String str_a2 = str_a1.concat(" ") // "hello "
+                      .repeat(3)   // "hello hello hello "
+                      .trim();     // "hello hello hello"
+```
+### 잘라내기
+파이썬의 슬라이싱과 유사하다.
+```
+String str_b1 = "대한민국 다 job 구하라 그래";
+
+String str_b2 = str_b1.substring(7);     // str_b1: "job 구하라 그래"
+String str_b3 = str_b1.substring(7, 10); // str_b3: "job"
+```
+`substring`의 첫번째 인자만 입력하면 해당 값에서 부터 끝가지를 리턴하고, 두번째 인자까지 입력하면 해당 값까지만 리턴한다.
+### 치환
+```
+String str_c1 = "hello world";
+String str_c2 = str_c1.replace("world", "world2"); // str_c2: "hello world2"
+```
+파이썬의 `replace`와 동일하다. 값이 여러개 존재한다면 전부 다 교체한다.
+### format
+
+|사용 코드|자료형|
+|------|------|
+|`%b`|불리언|
+|`%d`|10진수 정수|
+|`%f`|실수|
+|`%c`|문자|
+|`%s`|문자열|
+|`%n`|(포맷 문자열 내 바꿈)|
+
+formatting의 경우 `\n`이 아닌 `$n`을 사용한다.
+```
+String str1 = "%s의 둘레는 반지름 X %d X %f입니다.";
+
+String circle = "원";
+int two = 2;
+double PI = 3.14;
+
+String str2 = str1.formatted(circle, two, PI);
+// str2: "원의 둘레는 반지름 X 2 X 3.140000입니다."
+
+String str3 = String.format(str1, circle, two, PI);
+// str3: "원의 둘레는 반지름 X 2 X 3.140000입니다."
+```
+`formatted`는 해당 `String` 값을 지정하고, `format`은 첫번째 인자를 `String` 값을 사용한다.
+
+`formatted`는 13버전부터 사용 가능하다.
+### null
+`""`는 비어있는 공간을 부여받고, null은 어떠한 공간도 부여받지 않는다.
+
+따라서 `"" != null`이다.
+```
+Object obj = null;
+System sys = null;
+
+Integer nullInt1 = null;
+Double nullDbl1 = null;
+Boolean nullBool1 = null;
+Character nullChr1 = null;
+```
+참조 자료형은 null로 초기화할 수 있으며,
+```
+int nullInt2 = null;
+double nullDbl2 = null;
+boolean nullBool2 = null;
+char nullChr2 = null;     // 오류 발생
+```
+원시 자료형은 null로 초기화가 불가능하다.
 ## 단축어
 - `psvm` - 프로그램을 시작하는 메인 메서드
 - `sout` - 한 줄 프린트하기
+## print
+```
+System.out.println("hello");
+System.out.println("hello");
+System.out.println("hello");
+
+// hello
+// hello
+// hello
+```
+print뒤의 ln은 line으로 각 줄로 출력한다.
+```
+System.out.print("hello");
+System.out.print("hello");
+System.out.print("hello");
+
+// hellohellohello
+```
+`print` 함수는 기존에 이어서 출력한다.
+```
+System.out.printf("%s의 둘레는 반지름 X %d X %f입니다.%n", circle, two, PI);
+
+// 원의 둘레는 반지름 X 2 X 3.140000입니다.
+```
+`printf`는 formatting할 때 사용하며, `print`와 동일하게 붙이므로 `%n`을 사용하여 엔터 효과를 발생시켰다.
 # IntelliJ
 ## RUN
 `Main.java`를 RUN 하면 해당 프로젝트 디렉토리에
