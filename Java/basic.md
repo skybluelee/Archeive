@@ -436,6 +436,110 @@ boolean nullBool2 = null;
 char nullChr2 = null;     // 오류 발생
 ```
 원시 자료형은 null로 초기화가 불가능하다.
+## 배열
+동일한 타입의 데이터를 고정된 개수만큼 담을 수 있다.
+### 선언
+```
+char[] hello = new char [] {'h', 'e', 'l', 'l', 'o'};
+char[] hello = {'h', 'e', 'l', 'l', 'o'};
+```
+`<자료형>[] <배열 이름> = {<value>}`형식으로 초기화한다.
+
+`<자료형>[] <배열 이름> = new <자료형> [] {<value>}` 방식이 조금 더 엄격한 방식이며, 작동 방식은 동일하다.
+***
+```
+boolean[] boolAry = new boolean[3]; // boolAry: [false, false, false]
+int[] intAry = new int[3];          // intAry: [0, 0, 0]
+double[] dblAry = new double[3];    // dblAry: [0.0, 0.0, 0.0]
+char[] chrAry = new char[3];        // chrAry의 경우 \u0000값이 들어감
+String[] strAry = new String[3];    // strAry: [null, null, null]
+```
+초기화 없이 선언도 가능하다. 이때 default 값이 배열에 생성된다.
+```
+intAry[0] = 123;
+intAry[1] = 456;
+intAry[2] = 789;
+// intAry: [123, 456, 789]
+```
+배열의 값 변경 가능하다.
+***
+```
+char[] dirAry3;
+
+dirAry3 = {'동', '서', '남', '북'}; // 오류 발생
+dirAry3 = new char[] {'동', '서', '남', '북'};
+```
+배열의 개수 없이 선언하는 경우 `new <자료형>[]`가 필요하다.
+### 다중 배열
+```
+boolean[][] dblBoolAry = new boolean[3][3];
+// dblBoolAry: [false, false, false]
+               [false, false, false]
+               [false, false, false]
+
+int[][] dblIntAry = {{1, 2, 3},
+                     {4, 5},
+                     {6, 7, 8, 9}};
+```
+다중 배열의 경우 각 배열의 크기가 다를 수 있다.
+### 원시 자료형 vs 참조 자료형
+**배열은 참조 자료형이다.**
+```
+int int1 = 1;
+int int2 = 2;
+int2 = int1;   // int1: 1, int2: 1
+int2 = 3;      // int1: 1, int2: 3
+```
+원시 자료형의 경우 서로 다른 객체이다.
+***
+```
+int[] intAry1 = { 1, 2, 3 };
+int[] intAry2 = { 4, 5 };
+intAry2 = intAry1;           // intAry1: [1, 2, 3], intAry2: [1, 2, 3]
+intAry2[1] = 100;            // intAry1: [1, 100, 3], intAry2: [1, 100, 3]
+```
+참조 자료형의 경우 동일한 객체를 사용하므로 한 배열의 값이 바뀌면 동일한 객체를 바라보는 다른 배열의 값도 바뀐다.
+***
+문자형(`String`)의 경우 참조형 객체이지만, 원시형처럼 다룬다.
+***
+배열 앞에 `final`을 추가하면 상수 배열이 된다.
+
+```
+final int[] NUMBERS = {1, 2, 3, 4, 5};
+
+NUMBERS = new int[] {2, 3, 4, 5, 6}; // 오류 발생
+
+NUMBERS[0] = 11; // NUMBERS: [11, 2, 3, 4, 5]
+```
+상수 배열의 경우 초기화한 상태에서 다른 배열을 할당하는 것은 불가능하다. 하지만 배열의 요소를 바꾸는 것은 가능하다.
+### string join
+```
+String[] strings = {"hello", "world", "my", "name"};
+
+String join1 = String.join(", ", strings); // join1: "hello, world, my, name"
+String join2 = String.join("", strings);   // join2: "helloworldmyname"
+```
+## var
+```
+var intNum = 1;
+var doubleNum = 3.14;
+var charLet = 'A';
+var StringWord = "안녕하세요";
+
+var notInit; // 초기화가 안 됨
+var nullVar = null; // null로 초기화
+```
+자료형 대신에 `var`를 사용하여 변수를 선언할 수 있다. 이 방식은 일반적으로 가독성이 좋기 때문에 사용한다.
+***
+```
+intNum = 1.11; // 오류
+```
+기존과 같이 정해진 자료형을 변경할 수 없다.
+***
+```
+var chars = new char[] {'A', 'B', 'C', 'D', 'E'};
+```
+배열의 경우 `new <자료형>[]`을 사용하여 초기화해야 한다.
 ## 단축어
 - `psvm` - 프로그램을 시작하는 메인 메서드
 - `sout` - 한 줄 프린트하기
