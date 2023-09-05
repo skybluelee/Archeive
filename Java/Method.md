@@ -93,3 +93,49 @@ public class Ex01 {
 위 경우 `nums`로 3, 91, 14, 27, 4의 값을 입력하였고, 실행하는 메소드에서는 배열로 간주하여 실행한다.
 
 단, `static String descClass (int classNo, String teacher, String... kids)`와 같이 정해진 인자들과 사용시 맨 마지막에 놓아야 한다. 
+# 메소드 오버로딩
+```
+static int add(int a, int b) { return a + b; }
+static int add(int a, int b, int c) { return a + b + c; }
+static double add(double a, double b) { return a + b; }
+
+static String add(String a, char b) { return a + b; }
+static String add(char a, String b) { return a + b; }
+
+static double add(int a, int b) { return (double) (a + b); } // 오류 발생
+```
+1. 매개변수의 개수가 다르고,
+2. 매개변수의 자료형이 다르고,
+3. 매개변수의 자료형의 순서가 다른 경우
+메소드 이름이 같아도 다른 함수로 인식해서 사용할 수 있는데, 이를 메소드 오버로딩이라 한다.
+
+단 매개변수는 갖지만 반환하는 자료형이 다른 경우는 오버로딩이 불가능하다.
+# 원시형과 참조형
+```
+public class Ex01 {
+    public static void main(String[] args) {
+        int intNum = 3;        // intNum: 3
+        modifyIntArg(intNum);
+
+        int[] intNums = {1, 2, 3};
+
+        //  배열은 참조형이지만 그 안의 값들은 원시형
+        modifyIntArg(intNums[0]);
+
+        //  참조형인 배열 자체를 인자로 사용
+        modifyAryElem(intNums); // intNums: {1, 3, 3}
+    }
+
+    static void modifyIntArg (int num) {
+        System.out.printf("수정 전: %d%n", num++);
+        System.out.printf("수정 후: %d%n", num);
+    }
+    static  void modifyAryElem (int[] ary) {
+        System.out.printf("수정 전: %d%n", ary[1]++);
+        System.out.printf("수정 후: %d%n", ary[1]);
+    }
+}
+```
+원시형의 경우 값을 복사하여 사용하므로 메소드 내에서 값을 수정하더라도 원본 값은 변하지 않는다.
+
+참조형의 경우 값 자체를 사용하므로 메소드 내에서 값을 수정하면 해당 값도 변한다.
