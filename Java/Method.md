@@ -139,3 +139,34 @@ public class Ex01 {
 원시형의 경우 값을 복사하여 사용하므로 메소드 내에서 값을 수정하더라도 원본 값은 변하지 않는다.
 
 참조형의 경우 값 자체를 사용하므로 메소드 내에서 값을 수정하면 해당 값도 변한다.
+# 키보드 입력 받기
+```
+import java.util.Scanner;
+
+Scanner sc = new Scanner(System.in);
+
+String str1 = sc.next();
+String str2 = sc.next();
+String str3 = sc.nextLine();
+
+System.out.println("str1: " + str1);
+System.out.println("str2: " + str2);
+System.out.println("str3: " + str3);
+```
+```
+hello my name is
+
+str1: hello
+str2: my
+str3:  name is
+
+```
+`next()`는 스페이스나 엔터 등의 공백을 기준으로 문자열을 나누고, `nextLine()`은 엔터를 기준으로 문자열을 나눈다.
+```
+Scanner sc = new Scanner(System.in);
+
+boolean bool = sc.nextBoolean();
+int intNum = sc.nextInt();
+double dblNum = sc.nextDouble();
+```
+`nextBoolean`, `nextInt`, `nextDouble`은 각각 boolean, int, double 값을 키보드 입력으로 받는다.
