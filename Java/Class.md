@@ -93,3 +93,4 @@ public class ChickenMenu {                                    public class Chick
                                                                       return null;
                                                               }
 ```
+ChickenMenu 클래스의 경우 입력을 2개 받는 경우와 3개 받는 경우를 나누어 각각 생성자를 정의하였다. 동일한 클래스를 사용하는 각각의 객체가 생성된다.
