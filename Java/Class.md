@@ -32,7 +32,7 @@ public class Main {
 }
 ```
 Main문
-
+## 생성자
 **생성자**의 경우 해당 Class와 동일한 이름으로 인스턴스를 생성하는 것을 말한다.
 
 `Market` 클래스의 `Market (int price, String type)`이하를 생성자라고 한다.
@@ -42,7 +42,7 @@ Main문
 생성자가 없는 경우 인스턴스를 생성하고 변수를 각각 전달해야 한다.
 `musinsa.type = "Hoodie"; musinsa.price = 100000;`
 생성자를 만들지 않은채 실행하더라도 java 내에서 생성자를 생성한다.
-
+## this
 **this**는 생성한 객체를 의미한다.
 `Market (int price, String type) {
         this.price = price;
