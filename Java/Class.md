@@ -44,11 +44,12 @@ Main문
 생성자를 만들지 않은채 실행하더라도 java 내에서 생성자를 생성한다.
 ## this
 **this**는 생성한 객체를 의미한다.
-```Market (int price, String type) {
+``
+`Market (int price, String type) {
         this.price = price;
         this.type = type;
-    }```
-    
+    }
+```
 위 코드는 해당 인스턴스의 변수 `price, type`에 값을 넣는다.
 
 사용 변수가 겹치는 경우 원하는 값이 제대로 들어가지 않는 경우가 있는데, `this`를 사용하여 해결할 수 있다.
