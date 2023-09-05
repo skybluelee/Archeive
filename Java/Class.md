@@ -1,3 +1,5 @@
+# Class
+java의 클래스는 참조형으로 값을 변경하면 원래 객체의 값이 변경된다.
 # 생성자, this
 ```
 public class Market {
@@ -53,3 +55,41 @@ Market (int price, String type) {
 위 코드는 해당 인스턴스의 변수 `price, type`에 값을 넣는다.
 
 사용 변수가 겹치는 경우 원하는 값이 제대로 들어가지 않는 경우가 있는데, `this`를 사용하여 해결할 수 있다.
+# 다중 생성자
+```
+public class Main {
+    public static void main(String[] args) {
+        ChickenMenu[] menus = {
+                new ChickenMenu("후라이드", 10000),
+                new ChickenMenu("양념치킨", 12000),
+                new ChickenMenu("화덕구이", 15000, "bake")
+        };
+        Chicken store1 = new Chicken(3, "판교", menus);
+
+        ChickenMenu order1 = store1.orderMenu("양념치킨");
+        ChickenMenu order2 = store1.orderMenu("오븐구이");
+    }
+}
+```
+```
+public class ChickenMenu {                                    public class Chicken {
+    String name;                                                  int no;
+    int price;                                                    String name;
+    String cook = "fry";                                          ChickenMenu[] menus;
+
+    ChickenMenu (String name, int price) {
+        this.name = name;                                         Chicken (int no, String name, ChickenMenu[] menus) {
+        this.price = price;                                           this.no = no;
+    }                                                                 this.name = name;
+                                                                      this.menus = menus;
+    ChickenMenu (String name, int price, String cook) {           }
+        this.name = name;
+        this.price = price;                                       ChickenMenu orderMenu (String name) {
+        this.cook = cook;                                             for (ChickenMenu menu : menus) {
+    }                                                                      if (menu.name.equals(name)) {
+}                                                                              return menu;
+                                                                           }
+                                                                      }
+                                                                      return null;
+                                                              }
+```
