@@ -96,22 +96,38 @@ public class ChickenMenu {                                    public class Chick
 ChickenMenu 클래스의 경우 입력을 2개 받는 경우와 3개 받는 경우를 나누어 각각 생성자를 정의하였다. 동일한 클래스를 사용하는 각각의 객체가 생성된다.
 # static
 ```
-public class Chicken {                                        public class Main {
-    static String brand = "Min's Chicken";                        public static void main(String[] args) {
-    static String contact() {                                         String brand = Chicken.brand; // brand: Min's Chicken
-        return "%s에 오신걸 환영합니다.".formatted(brand);              String contact = Chicken.contact(); // contact: Min's Chicken에 오신걸 환영합니다.
+public class Chicken {                                        
+    static String brand = "Min's Chicken";                        
+    static String contact() {                                         
+        return "%s에 오신걸 환영합니다.".formatted(brand);              
     }                                                                 
-                                                                      // String main_name = Chicken.name; 오류 발생
+                                                                      
     String name;
-    int price;                                                        Chicken store = new Chicken(18000, "후라이드");
-                                                                      String menu_intro = store.menu(); // menu_intro: Min's Chicken에 오신걸 환영합니다. 후라이드는 18000원 입니다.
+    int price;                                                        
+                                                                      
     Chicken(int price, String name){
-        this.price = price;                                           String store_brand = store.brand; // 자동 생성이 안됨
-        this.name = name;                                             String store_contact = store.contact(); // store_contact: Min's Chicken에 오신걸 환영합니다.
-    }                                                             }
-                                                             }
+        this.price = price;                                           
+        this.name = name;                                             
+    }                                                             
+                                                             
     String menu() {
         return "%s에 오신걸 환영합니다. %s는 %d원 입니다.".formatted(brand, name, price);
+    }
+}
+```
+```
+public class Main {
+    public static void main(String[] args) {
+        String brand = Chicken.brand; // brand: Min's Chicken
+        String contact = Chicken.contact(); // contact: Min's Chicken에 오신걸 환영합니다.
+        
+        // String main_name = Chicken.name; 오류 발생
+        
+        Chicken store = new Chicken(18000, "후라이드");
+        String menu_intro = store.menu(); // menu_intro: Min's Chicken에 오신걸 환영합니다. 후라이드는 18000원 입니다.
+        
+        String store_brand = store.brand; // 자동 생성이 안됨
+        String store_contact = store.contact(); // store_contact: Min's Chicken에 오신걸 환영합니다.
     }
 }
 ```
