@@ -301,7 +301,7 @@ public class Main {
 - 생성자의 경우
 	- 부모 클래스에 생성자가 존재하는 경우
  		- `super()`을 사용하여 작성한다.
-   		- `super("ShutDown")`의 경우 `Button("ShutDown")과 동일하다.
+   		- `super("ShutDown")`의 경우 `Button("ShutDown")`과 동일하다.
      - 부모 클래스에 생성자가 존재하지 않는 경우
      	- 자손 클래스에 `super`를 포함한 생성자를 정의할 필요 없다.
 - 메소드의 경우
@@ -324,3 +324,66 @@ public ShutDownButton(String print) {
 }
 ```
 와 같이 빈 생성자라도 만들어야 한다. 그렇지 않으면 오류가 발생한다.
+# 다형성(Polymorphism)
+**상속** 파트의 코드 참조
+```
+Button button1 = new Button("Enter");
+Button button2 = new ShutDownButton();
+Button button3 = new ToggleButton("CapsLock", true);
+
+ShutDownButton button4 = new Button("Enter");
+ToggleButton button5 = new ShutDownButton();
+```
+자식 클래스는 모두 부모 클래스에 속한다. 따라서 위의 3개의 코드는 부모 클래스 객체를 자손 클래스를 통해 생성한다.
+
+반면 아래의 2개의 코드는 자손 클래스 객체를 부모 클래스를 통해 생성하거나, 상속 관계가 아닌 클래스를 통해 객체를 생성할 수 없다.
+
+이처럼 특정 자료형의 자리에 여러 종류가 들어올 수 있는 것을 **다형성**이라고 한다.
+## `instanceof`
+`instanceof`는 뒤에 오는 클래스의 인스턴스인지를 확인한다.
+```
+Button button = new Button("버튼");
+ToggleButton toggleButton = new ToggleButton("토글", true);
+ShutDownButton shutDownButton = new ShutDownButton();
+
+// true
+boolean typeCheck1 = button instanceof Button;
+boolean typeCheck2 = toggleButton instanceof Button;
+boolean typeCheck3 = shutDownButton instanceof Button;
+
+// false
+boolean typeCheck4 = button instanceof ShutDownButton;
+boolean typeCheck5 = button instanceof ToggleButton;
+
+// 오류 발생
+boolean typeCheck6 = toggleButton instanceof ShutDownButton;
+boolean typeCheck7 = shutDownButton instanceof ToggleButton;
+```
+Button과 그 자손 클래스에서 생성한 객체를 Button과 비교하면 true를 반환하고, 반대의 경우 false를 반환한다.
+
+상속 관계가 아닌 경우 오류가 발생한다.
+***
+```
+Button[] buttons = {
+		new Button("Space"),
+		new ToggleButton("NumLock", false),
+		new ShutDownButton()
+};
+
+for (Button btn : buttons) {
+	if (btn instanceof ShutDownButton) continue; 
+	btn.func();
+}
+```
+다음과 같이 종속 여부를 파악하여 진행할 수 있다.
+## object
+모든 클래스의 부모 클래스이다.
+```
+Object obj1 = new Object();
+
+Object obj2 = new YalcoChicken(3, "판교");
+Object obj3 = new ShutDownButton();
+```
+우리가 생성한 클래스를 아무런 제약 없이 Object 클래스를 사용하여 생성할 수 있다.
+
+Object가 아니고, 동일한 패키지 안에 없다면 해당 클래스가 있는 파일을 import해야 사용할 수 있다.
