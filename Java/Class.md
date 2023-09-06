@@ -258,7 +258,7 @@ public class Button {
 ```
 public class ShutDownButton extends Button { // Button 클래스를 상속함  public class ToggleButton extends Button {
     public ShutDownButton () {                                             private boolean on;
-        super("ShutDown"); // 💡 부모의 생성자 호출
+        super("ShutDown"); // 부모의 생성자 호출
     }                                                                      public ToggleButton(String print, boolean on) {
                                                                                super(print);
 	@Override                                                                  this.on = on;
@@ -266,5 +266,61 @@ public class ShutDownButton extends Button { // Button 클래스를 상속함  p
         System.out.println("프로그램 종료");
     }                                                                      @Override
 }                                                                          public void func () {
-
+										   									   super.func();
+																			   this.on = !this.on;
+																			   System.out.println(
+																						"대문자입력: " + (this.on ? "ON" : "OFF")
+																			   );
+																	       }
+																	    }
 ```
+```
+public class Main {
+    public static void main(String[] args) {
+		Button entrButton = new Button("Enter");
+        ShutDownButton stdnButton = new ShutDownButton();
+        ToggleButton tglButton = new ToggleButton("CapsLock", false);
+
+        entrButton.func();
+
+        System.out.println("\n- - - - -\n");
+
+        stdnButton.func();
+
+        System.out.println("\n- - - - -\n");
+
+        tglButton.func();
+        tglButton.func();
+        tglButton.func();
+    }
+}
+```
+`extends Button`를 사용하여 부모 클래스의 모든 필드와 메소드를 상속받는다.
+
+## `super`의 역할
+- 생성자의 경우
+	- 부모 클래스에 생성자가 존재하는 경우
+ 		- `super()`을 사용하여 작성한다.
+   		- `super("ShutDown")`의 경우 `Button("ShutDown")과 동일하다.
+     - 부모 클래스에 생성자가 존재하지 않는 경우
+     	- 자손 클래스에 `super`를 포함한 생성자를 정의할 필요 없다.
+- 메소드의 경우
+	- `super.`을 사용하여 부모 클래스의 메소드를 호출한다.
+ 	- `super.func()`의 경우 부모 클래스의 `func()`를 호출한다.
+ 
+## `@Override`
+부모 클래스의 메소드를 가져와서 덮어 쓴다.
+
+부모 클래스의 메소드와 동일한 이름이어야 한다. 이름이 다른 경우 오류가 발생한다.
+
+`@Override`로 정의한 메소드를 호출하면 부모 클래스의 메소드는 무시되고 Override한 메소드만 호출된다.
+## 생성자
+부모 클래스에 생성자를 정의했다면, 반드시 자손 클래스에도 `super`을 사용하여 생성자를 정의해야 한다.
+
+만약 자손 클래스에 정의할 생성자가 존재하지 않더라도
+```
+public ShutDownButton(String print) {
+	super(print);
+}
+```
+와 같이 빈 생성자라도 만들어야 한다. 그렇지 않으면 오류가 발생한다.
