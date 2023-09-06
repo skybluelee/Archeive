@@ -94,3 +94,24 @@ public class ChickenMenu {                                    public class Chick
                                                               }
 ```
 ChickenMenu 클래스의 경우 입력을 2개 받는 경우와 3개 받는 경우를 나누어 각각 생성자를 정의하였다. 동일한 클래스를 사용하는 각각의 객체가 생성된다.
+# static
+```
+public class Chicken {
+    static String brand = "Min's Chicken";
+    static String contact() {
+        return "%s에 오신걸 환영합니다.".formatted(brand);
+    }
+
+    String name;
+    int price;
+
+    Chicken(int price, String name){
+        this.price = price;
+        this.name = name;
+    }
+
+    String menu() {
+        return "%s는 %d원 입니다.".formatted(name, price);
+    }
+}
+```
