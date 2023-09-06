@@ -96,22 +96,27 @@ public class ChickenMenu {                                    public class Chick
 ChickenMenu 클래스의 경우 입력을 2개 받는 경우와 3개 받는 경우를 나누어 각각 생성자를 정의하였다. 동일한 클래스를 사용하는 각각의 객체가 생성된다.
 # static
 ```
-public class Chicken {
-    static String brand = "Min's Chicken";
-    static String contact() {
-        return "%s에 오신걸 환영합니다.".formatted(brand);
-    }
-
+public class Chicken {                                        public class Main {
+    static String brand = "Min's Chicken";                        public static void main(String[] args) {
+    static String contact() {                                         String brand = Chicken.brand; // brand: Min's Chicken
+        return "%s에 오신걸 환영합니다.".formatted(brand);              String contact = Chicken.contact(); // contact: Min's Chicken에 오신걸 환영합니다.
+    }                                                                 
+                                                                      // String main_name = Chicken.name; 오류 발생
     String name;
-    int price;
-
+    int price;                                                        Chicken store = new Chicken(18000, "후라이드");
+                                                                      String menu_intro = store.menu(); // menu_intro: Min's Chicken에 오신걸 환영합니다. 후라이드는 18000원 입니다.
     Chicken(int price, String name){
-        this.price = price;
-        this.name = name;
-    }
-
+        this.price = price;                                           String store_brand = store.brand; // 자동 생성이 안됨
+        this.name = name;                                             String store_contact = store.contact(); // store_contact: Min's Chicken에 오신걸 환영합니다.
+    }                                                             }
+                                                             }
     String menu() {
-        return "%s는 %d원 입니다.".formatted(name, price);
+        return "%s에 오신걸 환영합니다. %s는 %d원 입니다.".formatted(brand, name, price);
     }
 }
 ```
+`static`으로 생성한 변수는 메모리에 저장되어, 클래스로 생성된 객체가 해당 변수를 가져올 수 있다.
+
+`static`으로 생성한 변수는 메인 메소드에서 가져올 수 있지만, 인스턴스 메소드 내의 변수는 가져올 수 없다.
+
+`static`으로 생성한 변수를 객체를 통해서 가져올 수 있으나 권장되지는 않는다.
