@@ -387,3 +387,189 @@ Object obj3 = new ShutDownButton();
 우리가 생성한 클래스를 아무런 제약 없이 Object 클래스를 사용하여 생성할 수 있다.
 
 Object가 아니고, 동일한 패키지 안에 없다면 해당 클래스가 있는 파일을 import해야 사용할 수 있다.
+# final
+`final`은 변경하지 못하게 만들어준다.
+**필드**의 경우 변수를 선언과 동시에 초기화하거나 생성자에서 초기화한다.
+```
+private final int no;
+또는
+public Final_Class(int no) {
+	this.no = no;
+}
+```
+```
+// 오류 발생
+public void changeFinalFields () {
+	this.no++;
+}
+```
+이 경우 위와 같이 `final`로 생성한 변수를 바꾸려 하면 오류가 발생한다.
+***
+**메소드**의 경우 override가 불가능하게 된다.
+```
+public final void Final_Check () {
+	System.out.println("This is final");
+}
+```
+메소드를 부모 클래스가 가지고 있고
+```
+// 오류 발생
+@override
+public void Final_Check () {
+	System.out.println("Not final");
+}
+```
+자식 클래스가 위와 같이 부모 클래스의 메소드를 override하는 경우 오류가 발생한다.
+***
+**인스턴스**의 경우 다른 값을 넣지는 못하지만, 필드는 변경할 수 있다.
+```
+final Final_Class instance = new Final_Class(3, "aaa");
+
+// 오류 발생
+instance = new Final_Class(17, "bbb");
+// 변경 가능
+instance.name = "ccc";
+```
+***
+**클래스**의 경우 자손 클래스를 만들 수 없다.
+```
+public final class Final_Class{
+	...
+}
+
+// 오류 발생
+public class add_class extends Final_Class {
+}
+```
+`extends <final_class>` 과정에서 오류가 발생한다.
+# 추상 클래스
+스스로는 인스턴스를 만들 수 없으며, 관련 클래스의 공통 분모를 정의하기 위한 클래스이다.
+**인스턴스**
+```
+public abstract class Kakao {
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Kakao yalcoGroup = new Kakao(1, "서울"); // 오류 발생
+}
+```
+추상 클래스로 객체를 생성하는 것은 불가능하다.
+***
+**메소드**
+```
+public abstract class Kakao {
+	abstract static String getCreed (); // 오류 발생
+
+    public abstract void takeOrder();
+}
+
+public class Cafe extends Kakao {
+    @Override
+    public void takeOrder () {
+        System.out.printf("얄코카페 %s 음료를 주문해주세요.%n", super.intro());
+        if (!isTakeout) System.out.println("매장에서 드시겠어요?");
+    }
+}
+```
+추상 클래스에서 클래스 메소드(`static`을 사용한 메소드)는 사용할 수 없다.
+
+추상 클래스에서 정의한 메소드는 자식 클래스에서 정의해야 한다.
+
+위와 같이 `takeOrder()` 메소드를 자식 클래스에서 정의해야 하며, 정의하지 않는 경우 오류가 발생한다. 
+IntelliJ 상태창 -> Code -> Generator -> Implement Method를 클릭하면 부모 클래스로 부터 정의해야 하는 메소드를 알려준다.
+
+추상 클래스에서의 메소드는 이미 역할이 지정되어 있어 접근 제어자(`public`)을 사용하지 않아도 정상적으로 작동한다.
+***
+**다형성**
+추상 클래스의 자식들로 만든 객체를 추상 클래스를 통해 메소드 제어가 가능하다.
+# 인터페이스
+추상 클래스와 달리 종속되지 않고, 원하는 객체에 제한 없이 사용할 수 있다.
+`public interface <interface_name>`형식으로 작성하며, interface를 class로 바꾸면 기존 class 파일로 변경된다.
+
+```
+public interface Hunter {
+    String position = "hunter"; // 반드시 초기화
+    void hunt (); // Hunter 인터페이스를 사용하는 경우 정의해야 함
+}
+```
+인터페이스의 필드는 `public static final`이 디폴트로 정해져 있다. 또한 생성자가 존재하지 않아,
+필드를 선언하는 동시에 반드시 초기화를 진행해야 한다.
+
+메소드의 경우 `public abstract`가 디폴트로 정해져 있어 해당 인터페이스를 사용하는 경우 반드시 정의해야 한다.
+***
+```
+public class PolarBear extends Mamal implements Hunter, Swimmer {
+    public PolarBear() {
+        super(false);
+    }
+
+    @Override
+    public void hunt() {
+        System.out.println(position + ": Coca Cola");
+    }
+
+    @Override
+    public void swim() {
+        System.out.println("swimming");
+    }
+}
+```
+`implements`를 사용하여 인터페이스를 사용하고, 여러 개의 인터페이스를 적용할 수 있다.
+
+해당 인터페이스에서 메소드를 선언한 경우, 위와 같이 정의하지 않으면 오류가 발생한다.
+## default
+```
+public interface food {
+    static void announcement() {
+        System.out.println("식품안전 관련 공지");
+    }
+
+    default void regularInspection () {
+        System.out.println("정기 체크");
+    }
+
+    void cleanKitchen ();
+}
+```
+`static`으로 생성한 메소드는 메인 메소드에서 바로 사용할 수 있다. 위의 경우 `food.announcement();`로 호출할 수 있다.
+
+`default`를 사용하는 경우 일반적인 메소드와 달리 해당 인터페이스를 사용하는 클래스에서 `default` 메소드를 작성하지 않아도 된다.
+# 싱글턴
+객체지향언어에서 많이 사용하는 활용 방식 중 하나이다.
+
+프로그램 상에서 특정 인스턴스가 하나만 있어야 할 때 사용한다.
+```
+public class Setting {
+	private static Setting setting; // 클래스 필드로 설정
+
+    private Setting () {} // 생성자를 private으로 설정
+
+    public static Setting getInstance() {
+        if (setting == null) {        // 객체가 존재하지 않는다면 
+            setting = new Setting();  // 객체를 생성함
+        }
+        return setting;
+    }
+}
+```
+위와 같이 클래스(정적) 필드로 정의한다면 프로그램에서 메모리 하나만 존재하게 된다. 즉 모든 객체가 동일한 필드를 공유한다.
+```
+public class Tab {
+    // 공유되는 유일한 인스턴스를 받아옴
+    private Setting setting = Setting.getInstance();
+
+    public Setting getSetting() {
+        return setting;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+		Tab tab1 = new Tab();
+        Tab tab2 = new Tab();
+        Tab tab3 = new Tab();
+    }
+}
+```
+Tab 클래스의 모든 독립된 객체는 동일한 필드를 사용한다.
