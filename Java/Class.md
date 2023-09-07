@@ -266,7 +266,7 @@ public class ShutDownButton extends Button { // Button 클래스를 상속함  p
         System.out.println("프로그램 종료");
     }                                                                      @Override
 }                                                                          public void func () {
-										   									   super.func();
+																			   super.func();
 																			   this.on = !this.on;
 																			   System.out.println(
 																						"대문자입력: " + (this.on ? "ON" : "OFF")
