@@ -589,16 +589,16 @@ public class Parent {   // 부모 클래스
 }
 ```
 ```
-package sec06.chap02.pkg1;				package sec06.chap02.pkg1;
+package sec06.chap02.pkg1;              package sec06.chap02.pkg1;
 
-// 자식 클래스							// 친구 클래스
+// 자식 클래스                           // 친구 클래스
 public class Child extends Parent {     public class Friend {
-    //  int aa = a; // 오류 발생				Parent parent = new Parent();	
-    int bb = b;								//  int aa = new Parent().a; // ⚠️ 불가
-    int cc = c;								int bb = parent.b;
-    int dd = d;								int cc = parent.c;
-}											int dd = parent.d;
-										}
+    //  int aa = a; // 오류 발생	            Parent parent = new Parent();	
+    int bb = b;	                            //  int aa = new Parent().a; // 오류 발생
+    int cc = c;	                            int bb = parent.b;
+    int dd = d;	                            int cc = parent.c;
+}                                           int dd = parent.d;
+                                        }
 ```
 동일한 패키지의 자식 클래스의 경우 `private`을 제외한 접근 제어자로 선언된 필드는 바로 가져올 수 있다. 
 단 `private`으로 선언된 필드를 상속받지 못하는 것이 아닌 변수로 가져오지 못하는 것을 의미한다.
@@ -639,7 +639,7 @@ public class Main {
         Cls3 cls3 = new Cls3(); // pkg3의 클래스들
 
 		
-		// 패키지의 이름이 동일한 경우 
+        // 패키지의 이름이 동일한 경우 
         sec06.chap02.pkg1.Child child1 = new sec06.chap02.pkg1.Child();
         sec06.chap02.pkg2.Child child2 = new sec06.chap02.pkg2.Child();
 
