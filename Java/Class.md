@@ -261,7 +261,7 @@ public class ShutDownButton extends Button { // Button 클래스를 상속함  p
         super("ShutDown"); // 부모의 생성자 호출
     }                                                                      public ToggleButton(String print, boolean on) {
                                                                                super(print);
-	@Override                                                                  this.on = on;
+    @Override                                                                  this.on = on;
     public void func () {                                                  }
         System.out.println("프로그램 종료");
     }                                                                      @Override
@@ -276,7 +276,7 @@ public class ShutDownButton extends Button { // Button 클래스를 상속함  p
 ```
 public class Main {
     public static void main(String[] args) {
-		Button entrButton = new Button("Enter");
+        Button entrButton = new Button("Enter");
         ShutDownButton stdnButton = new ShutDownButton();
         ToggleButton tglButton = new ToggleButton("CapsLock", false);
 
