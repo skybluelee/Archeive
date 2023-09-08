@@ -616,16 +616,16 @@ public class Parent {   // 부모 클래스
 }
 ```
 ```
-package sec06.chap02.pkg2;				package sec06.chap02.pkg1;
+package sec06.chap02.pkg2;              package sec06.chap02.pkg1;
 import sec06.chap02.pkg1.Parent;
-// 자식 클래스							// 친구 클래스
+// 자식 클래스                           // 친구 클래스
 public class Child extends Parent {     public class Friend {
-    //  int aa = a; // 오류 발생				Parent parent = new Parent();	
-    int bb = b;								//  int aa = new Parent().a; // ⚠️ 불가
-    int cc = c;								int bb = parent.b;
-    int dd = d;								int cc = parent.c;
-}											int dd = parent.d;
-										}
+    //  int aa = a; // 오류 발생             Parent parent = new Parent();	
+    int bb = b;                             //  int aa = new Parent().a; // 오류 발생
+    int cc = c;                             int bb = parent.b;
+    int dd = d;                             int cc = parent.c;
+}                                           int dd = parent.d;
+                                         }
 ```
 자식 클래스가 패키지가 다른 부모로부터 상속받기 위해서는 `import`를 사용해야 한다.
 ***
@@ -836,8 +836,8 @@ public class Main2 {
         var cloth2Price = cloth2.getPrice();
 
         var byNames = new YalcoChickenMenu[] { // byNames: 0 = "HD"
-                Clothes.valueOf("HD"),						    - name = "후드티", price = 100000, rank = 1
-                Clothes.valueOf("MM"),					   1 = "MM"
+                Clothes.valueOf("HD"),                         - name = "후드티", price = 100000, rank = 1
+                Clothes.valueOf("MM"),                     1 = "MM"
                 Clothes.valueOf("JS"),                     2 = "JS"
                 // Clothes.valueOf("NN"), // 오류 발생
         };
@@ -851,8 +851,8 @@ public class Main2 {
         };
 
         var menus = YalcoChickenMenu.values(); // menus: "HD"
-    }													 - name = "후드티", price = 100000, rank = 1
-}														 "MM" ...
+    }                                                    - name = "후드티", price = 100000, rank = 1
+}                                                        "MM" ...
 ```
 `valueOf()`는 해당 이름의 가진 값 내부의 모든 데이터를 가지고온다. `enum` 내부에 요청한 값이 없다면 오류가 발생한다.
 
