@@ -573,3 +573,81 @@ public class Main {
 }
 ```
 Tab 클래스의 모든 독립된 객체는 동일한 필드를 사용한다.
+# 패키지
+자바 프로젝트의 디렉토리 역할을 수행한다.
+
+클래스 명의 중복을 방지하기 위해 사용한다. 해당 클래스를 입력하면 동일한 클래스 이름이더라도 intelliJ에서 패키지 디렉토리를 알려주기 때문에
+클래스를 정확하게 선택할 수 있다.
+
+```
+package sec06.chap02.pkg1;
+
+public class Parent {   // 부모 클래스
+    private int a = 1;
+    int b = 2; // default
+    protected int c = 3;
+    public int d = 4;
+}
+```
+```
+package sec06.chap02.pkg1;				package sec06.chap02.pkg1;
+
+// 자식 클래스							// 친구 클래스
+public class Child extends Parent {     public class Friend {
+    //  int aa = a; // 오류 발생				Parent parent = new Parent();	
+    int bb = b;								//  int aa = new Parent().a; // ⚠️ 불가
+    int cc = c;								int bb = parent.b;
+    int dd = d;								int cc = parent.c;
+}											int dd = parent.d;
+										}
+```
+동일한 패키지의 자식 클래스의 경우 `private`을 제외한 접근 제어자로 선언된 필드는 바로 가져올 수 있다. 
+단 `private`으로 선언된 필드를 상속받지 못하는 것이 아닌 변수로 가져오지 못하는 것을 의미한다.
+
+동일한 패키지의 친구 클래스의 경우 필드를 상속받지 못하지만, 객체를 생성하여 `private`을 제외한 접근 제어자로 선언된 필드를 가져올 수 있다.
+***
+```
+package sec06.chap02.pkg1;
+
+public class Parent {   // 부모 클래스
+    private int a = 1;
+    int b = 2; // default
+    protected int c = 3;
+    public int d = 4;
+}
+```
+```
+package sec06.chap02.pkg2;				package sec06.chap02.pkg1;
+import sec06.chap02.pkg1.Parent;
+// 자식 클래스							// 친구 클래스
+public class Child extends Parent {     public class Friend {
+    //  int aa = a; // 오류 발생				Parent parent = new Parent();	
+    int bb = b;								//  int aa = new Parent().a; // ⚠️ 불가
+    int cc = c;								int bb = parent.b;
+    int dd = d;								int cc = parent.c;
+}											int dd = parent.d;
+										}
+```
+자식 클래스가 패키지가 다른 부모로부터 상속받기 위해서는 `import`를 사용해야 한다.
+***
+```
+import sec06.chap02.pkg3.*; // 와일드카드
+
+public class Main {
+    public static void main(String[] args) {
+        Cls1 cls1 = new Cls1();
+        Cls2 cls2 = new Cls2();
+        Cls3 cls3 = new Cls3(); // pkg3의 클래스들
+
+		
+		// 패키지의 이름이 동일한 경우 
+        sec06.chap02.pkg1.Child child1 = new sec06.chap02.pkg1.Child();
+        sec06.chap02.pkg2.Child child2 = new sec06.chap02.pkg2.Child();
+
+		System.out.println(child1.b); // sec06.chap02.pkg1의 Child 클래스의 변수를 받음
+    }
+}
+```
+특정 패키지에서 여러 클래스를 사용하기 위해서 `.*`을 사용할 수 있다. 이 방식을 와일드 카드라고 한다.
+
+패키지의 이름이 동일한 경우 위와 같이 패키지 이름을 임의로 변경하여 사용할 수 있다.
