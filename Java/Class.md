@@ -851,7 +851,7 @@ public class Main2 {
         };
 
         var menus = YalcoChickenMenu.values(); // menus: "HD"
-    }													  - name = "후드티", price = 100000, rank = 1
+    }													 - name = "후드티", price = 100000, rank = 1
 }														 "MM" ...
 ```
 `valueOf()`는 해당 이름의 가진 값 내부의 모든 데이터를 가지고온다. `enum` 내부에 요청한 값이 없다면 오류가 발생한다.
