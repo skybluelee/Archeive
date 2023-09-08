@@ -643,7 +643,7 @@ public class Main {
         sec06.chap02.pkg1.Child child1 = new sec06.chap02.pkg1.Child();
         sec06.chap02.pkg2.Child child2 = new sec06.chap02.pkg2.Child();
 
-		System.out.println(child1.b); // sec06.chap02.pkg1의 Child 클래스의 변수를 받음
+        System.out.println(child1.b); // sec06.chap02.pkg1의 Child 클래스의 변수를 받음
     }
 }
 ```
@@ -662,7 +662,7 @@ public class Outer {
 ```
 ## 멤버 인스턴스
 ```
-    // 멤버 인스턴스
+        // 멤버 인스턴스
 	class InnerInstMember {
         private String name = inst + sttc;
         private InnerSttcMember innerSttcMember = new InnerSttcMember(); // static class
