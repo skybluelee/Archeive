@@ -861,3 +861,33 @@ public class Main2 {
 `ordinal()`는 enum 값의 순서를 반환한다.
 
 `values()`는 enum의 전체 배열을 반환한다.
+# 레코드
+enum을 사용하는 경우 enum 형식을 지정하고, 생성자를 만들고 필요에 따라 `final`을 사용해 필드가 바뀌지 못하도록 설정하고, 그에 따라 해당 필드를 리턴하는 메소드를 생성해야 했다.
+```
+public record Child(
+	String name,
+	int birthYear,
+	Gender gender
+) {}
+```
+하지만 record를 사용하는 경우 필드가 기본적으로 `private, final` 특성을 가지고 `getter`의 특성 또한 가지게 되어 간단하게 구현할 수 있다.
+```
+public class Main1 {
+    public static void main(String[] args) {
+        var children = new Child[] {
+                new Child("leona", 2015, Gender.FEMALE),
+                new Child("jhin", 2017, Gender.MALE),
+        };
+
+        for (var child : children) {
+            System.out.printf(
+                    "%s %d년생 %s 어린이%n",
+                    child.gender(),
+                    child.birthYear(),
+                    child.name()
+            );
+        }
+    }
+}
+```
+record의 `Child`로 객체를 생성하고, record의 필드인 name, birthYear, gender에 `()`를 붙여 바로 해당 값을 리턴받을 수 있다.
