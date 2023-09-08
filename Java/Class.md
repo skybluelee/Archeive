@@ -265,14 +265,13 @@ public class ShutDownButton extends Button { // Button 클래스를 상속함  p
     public void func () {                                                  }
         System.out.println("프로그램 종료");
     }                                                                      @Override
-}                                                                          public void func () {
-																			   super.func();
-																			   this.on = !this.on;
-																			   System.out.println(
-																						"대문자입력: " + (this.on ? "ON" : "OFF")
-																			   );
-																	       }
-																	    }
+}																		   public void func () {
+																		   	   super.func();
+																	       	   this.on = !this.on;
+																		       System.out.println(
+																		            "대문자입력: " + (this.on ? "ON" : "OFF"));
+																		       }
+																		  }
 ```
 ```
 public class Main {
@@ -651,3 +650,214 @@ public class Main {
 특정 패키지에서 여러 클래스를 사용하기 위해서 `.*`을 사용할 수 있다. 이 방식을 와일드 카드라고 한다.
 
 패키지의 이름이 동일한 경우 위와 같이 패키지 이름을 임의로 변경하여 사용할 수 있다.
+# 내부 클래스
+내부 클래스는 외부/내부 클래스간의 관계가 긴밀할 때 사용한다.
+
+적절히 사용시 가독성을 높여주나, 과하게 사용하면 클래스가 비대화 되는 단점이 있다.
+***
+```
+public class Outer {
+    private String inst = "field";
+    private static String sttc = "sttatic_field";
+```
+## 멤버 인스턴스
+```
+    // 멤버 인스턴스
+	class InnerInstMember {
+        private String name = inst + sttc;
+        private InnerSttcMember innerSttcMember = new InnerSttcMember(); // static class
+
+        public void func () {
+            System.out.println(name);
+        }
+    }
+```
+멤버 인스턴스(일반적인 내부 클래스)의 경우 Outer 클래스의 일반 필드와 static 필드 모두 사용할 수 있다.
+
+또한 정적 내부 클래스에 접근할 수 있다.
+***
+```
+public class Main {
+    public static void main(String[] args) {
+        Outer.InnerInstMember innerInstMember = outer.getInnerInstMember();
+        innerInstMember.func();
+    }
+}
+```
+멤버 인스턴스 클래스는 위와 같은 방식으로 객체를 생성할 수 있다.
+## 정적 내부 클래스
+```
+	// static 클래스
+	public static class InnerSttcMember {
+        // private String name1 = inst; // 오류 발생
+		private String name2 = sttc;
+
+        // private InnerInstMember innerInstMember = new InnerInstMember(); // 오류 발생
+
+        public void func () {
+            // ⚠️ 인스턴스 메소드지만 클래스가 정적(클래스의)이므로 인스턴스 필드 접근 불가
+            //  name += inst;
+            System.out.println(name);
+        }
+    }
+```
+정적 내부 클래스의 경우 클래스에서 static으로 선언되지 않은 필드는 사용할 수 없다.
+
+또한 멤버 인스턴스 클래스에 접근할 수 없다.
+***
+```
+public class Main {
+    public static void main(String[] args) {
+        Outer.InnerSttcMember staticMember = new Outer.InnerSttcMember();
+        staticMember.func();
+    }
+}
+```
+정적 내부 클래스는 위와 같은 방식으로 객체를 생성할 수 있다.
+## 메소드 안에 정의된 클래스
+```
+	public void memberFunc () {
+        class MethodMember {
+            String instSttc = inst + " " + sttc;
+            InnerInstMember innerInstMember = new InnerInstMember();
+            InnerSttcMember innerSttcMember = new InnerSttcMember();
+
+            public void func () {
+                innerInstMember.func();
+                innerSttcMember.func();
+                System.out.println("메소드 안의 클래스");
+            }
+        }
+    }
+```
+outer 클래스에서 생성된 모든 필드와 클래스에 접근이 가능하다.
+## 익명 클래스
+따로 이름을 부여받지 않고 다른 클래스나 인터페이스로부터 상속 받아 만들어진다.
+
+한 번만 사용되므로 클래스로 정의할 필요없이 간단하게 구축하고, 사용후 버려진다.
+```
+import sec05.chap08.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Kakao store1 = new Chicken("울산");
+        Kakao store2 = new Cafe("창원", true);
+
+        Kakao store3 = new Kakao (1, "포항") {
+            @Override
+            public void takeOrder() {
+                System.out.printf(
+                        "super.intro() // super: Kakao
+                );
+            }
+
+            public void dryFish () {
+                System.out.println("anonymous");
+            }
+        };
+
+        // store3.dryFish // 오류 발생
+    }
+}
+```
+익명 클래스의 인스턴스는 상속받거나 오버라이드 된 메소드만 호출 가능하다. 위에서는 Kakao 인스턴스를 상속받아 사용하였다.
+
+익명 클래스 내부에서 생성한 메소드는 익명 클래스 밖에서는 사용 불가능하다.
+# 메인 메소드
+```
+javac <class_name>.java
+
+java <class_name> <args>
+```
+위의 방식으로 메인 메소드에 인자를 입력할 수 있다.
+# 열거형
+지정된 값을 반복하여 사용하는 경우 발생할 수 있는 오류를 없애기 위해 사용한다.
+```
+public class Button {
+    enum Mode { LIGHT, DARK }
+    enum Space { SINGLE, DOUBLE, TRIPLE }
+
+    private Mode mode = Mode.LIGHT;
+    private Space space = Space.SINGLE; // 메소드 사용을 위해 디폴트 값을 넣는 형식으로 초기화
+
+    public void setMode(Mode mode) {
+        this.mode = mode;
+    }
+
+    public void setSpace(Space space) {
+        this.space = space;
+    }
+}
+
+public class Main1 {
+    public static void main(String[] args) {
+        Button button1 = new Button();
+
+        button1.setMode(Button.Mode.LIGHT);
+        button1.setSpace(Button.Space.DOUBLE);
+    }
+}
+```
+`Mode, Space`를 `enum`형식으로 생성하였다. 그 결과 `Mode.` 혹은 `Space.`을 입력하면 자동으로 해당 하는 자료인 `{ LIGHT, DARK }, { SINGLE, DOUBLE, TRIPLE }`이 나오게 된다.
+***
+```
+public enum Clothes {
+    HD("후드티", 100000, 1),
+    MM("맨투맨", 80000, 3),
+    JS("청바지", 90000, 2),
+
+    private String type;
+    private int price;
+    private int rank;
+
+    Clothes(String type, int price, int rank) {
+        this.type = type;
+        this.price = price;
+        this.rank = rank;
+    }
+
+    public String getName() { return name; }
+    public int getPrice() { return price; }
+}
+```
+`enum`을 사용하는 경우 `Clothes(String type, int price, int rank)`에서 설정한 순서대로 해당 배열이 설정된다.
+```
+HD(type: "후드티", price: 100000, rank: 1)
+```
+위와 같이 표기된다.
+```
+public class Main2 {
+    public static void main(String[] args) {
+        Clothes cloth1 = Clothes.HD;
+        Clothes cloth2 = Clothes.MM;
+        Clothes cloth3 = Clothes.JS;
+
+        var cloth1Name = cloth1.getName();
+        var cloth2Price = cloth2.getPrice();
+
+        var byNames = new YalcoChickenMenu[] { // byNames: 0 = "HD"
+                Clothes.valueOf("HD"),						    - name = "후드티", price = 100000, rank = 1
+                Clothes.valueOf("MM"),					   1 = "MM"
+                Clothes.valueOf("JS"),                     2 = "JS"
+                // Clothes.valueOf("NN"), // 오류 발생
+        };
+
+        var names = new String[] { // names: ["HD", "MM", "JS"]
+                cloth1.name(), cloth2.name(), cloth3.name()
+        };
+
+        var orders = new int[] { // orders: [1, 2, 3]
+                cloth1.ordinal(), cloth2.ordinal(), cloth3.ordinal()
+        };
+
+        var menus = YalcoChickenMenu.values(); // menus: "HD"
+    }													  - name = "후드티", price = 100000, rank = 1
+}														 "MM" ...
+```
+`valueOf()`는 해당 이름의 가진 값 내부의 모든 데이터를 가지고온다. `enum` 내부에 요청한 값이 없다면 오류가 발생한다.
+
+`name()`은 enum의 각 항목의 이름을 반환한다.
+
+`ordinal()`는 enum 값의 순서를 반환한다.
+
+`values()`는 enum의 전체 배열을 반환한다.
