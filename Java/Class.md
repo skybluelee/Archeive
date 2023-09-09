@@ -891,3 +891,523 @@ public class Main1 {
 }
 ```
 record의 `Child`로 객체를 생성하고, record의 필드인 name, birthYear, gender에 `()`를 붙여 바로 해당 값을 리턴받을 수 있다.
+# Object
+모든 클래스의 조상이다.
+
+`Object`를 Ctrl + 클릭해서 클래스를 확인하면 필드 없이 메소드들만 갖고 있는 것을 확인할 수 있다.
+- `@IntrinsicCandidate` : 작성된 코드를 보다 효율적인 내부적 동작으로 덮어씀
+- `native` : C, C++ 등 다른 언어로 작성된 코드를 호출하여 성능 향상
+## toString
+```
+public String toString() {
+	return getClass().getName() + "@" + Integer.toHexString(hashCode());
+}
+```
+해당 클래스의 이름과 @ 그리고 해시코드를 반환한다.
+```
+public class Button {
+    public enum Mode {
+        LIGHT("light_10"), DARK("light_1");
+        Mode(String indicator) { this.indicator = indicator; }
+        String indicator;
+    }
+
+    private String name;
+    private Mode mode;
+    private int spaces;
+
+    public Button(String name, Mode mode, int spaces) {
+        this.name = name;
+        this.mode = mode;
+        this.spaces = spaces;
+    }
+
+//      @Override
+//      public String toString() {
+//          return "%s %s button (%d space moved)"
+//                  .formatted(mode.indicator, name, spaces);
+//      }
+}
+
+public class Main1 {
+    public static void main(String[] args) {
+        Button button1 = new Button("enter", Button.Mode.DARK, 3);
+
+        System.out.println(button1);
+    }
+}
+```
+`@Override` 없이 실행하는 경우 `sec07.chap01.Button@41629346`가 출력되는데, 디렉토리와 해당 클래스 이름, 그리고 해시코드를 반환한다.
+
+`@Override`를 사용하는 경우 `light_1 enter button (3 space moded)`가 출력되는데, 이는 `toString()`의 결과를 기본적으로 출력하도록 정해져 있기 때문이다.
+## equals
+```
+public boolean equals(Object obj) {
+	return (this == obj);
+}
+```
+```
+public class Click {
+    int x;
+    int y;
+    int timestamp;
+
+    public Click(int x, int y, int timestamp) {
+        this.x = x;
+        this.y = y;
+        this.timestamp = timestamp;
+    }
+
+    //  @Override
+    //  public boolean equals(Object obj) {
+    //      if (!(obj instanceof Click)) return false; // 비교 대상이 Click 인스턴스가 아니면 false를 리턴
+    //      return this.x == ((Click) obj).x && this.y == ((Click) obj).y;
+    //                       // obj를 Click 클래스로 강제 변환 후 x, y 좌표 획득 후 비교
+    //  }
+}
+
+public class Main1 {
+    public static void main(String[] args) {
+        Click click1 = new Click(123, 456, 5323487);
+        Click click2 = new Click(123, 456, 5323487);
+        Click click3 = new Click(123, 456, 2693702);
+                                               // default  @Override
+        boolean bool1 = click1 == click1;      // true     true
+        boolean bool2 = click1 == click2;      // false    false
+        boolean bool3 = click1 == click3;      // false    false
+
+        boolean boolA = click1.equals(click1); // true     true
+        boolean boolB = click1.equals(click2); // false    true
+        boolean boolC = click1.equals(click3); // false    false
+    }
+}
+```
+`==`이든 `equals()`든 객체가 다르면 false를 리턴한다.
+
+`@Override`를 사용하여 equals의 내용을 개조하여 필드 값을 비교하여 true, false를 리턴하도록 수정하였다.
+## hashCode
+기본적으로는 각 객체의 고유의 메모리 위치 값을 리턴한다.
+```
+public class Click {
+    int x;
+    int y;
+    int timestamp;
+
+    public Click(int x, int y, int timestamp) {
+        this.x = x;
+        this.y = y;
+        this.timestamp = timestamp;
+    }
+
+    //  @Override
+	//	public int hashCode() {
+	//      return x * 100000 + y;
+	//  }
+}
+
+public class Main1 {
+    public static void main(String[] args) {
+        Click click1 = new Click(123, 456, 5323487);
+        Click click2 = new Click(123, 456, 5323487);
+        Click click3 = new Click(123, 456, 2693702);
+
+		var click1Hash = click1.hashCode();
+        var click2Hash = click2.hashCode();
+        var click3Hash = click3.hashCode();
+    }
+}
+```
+객체는 서로 독립적인 존재이므로 기본적으로는 다른 값을 리턴한다.
+
+`@Override`를 사용해 값이 같은 경우 동일한 해시코드를 갖도록 설정할 수 있다.
+***
+```
+public class Main1 {
+    public static void main(String[] args) {
+		var str1 = new String("Hello");
+        var str2 = new String("Hello");
+        var str3 = new String("World");
+
+		boolean bool = str1 == str2   // false
+
+        var str1Hash = str1.hashCode();
+        var str2Hash = str2.hashCode();
+        var str3Hash = str3.hashCode();
+        
+        var str1ToStr = str1.toString();
+        var str1eq2 = str1.equals(str2);
+	}
+}
+```
+문자열의 경우 위에서 `@Override`한 것과 동일한 특성을 갖는다.
+
+`==`을 사용하는 경우 서로 다른 객체이므로 false를 리턴하나, `equals`로 비교하는 경우 동일한 문자열이면 true를 리턴한다.
+## clone
+인스턴스가 스스로를 복사하기 위해 사용한다. 깊은 복사는 직접 오버라이드하여 구현해주어야 한다.
+```
+Click click1 = new Click(1, 2);
+Click click2 = click1;
+click1.x = 3
+```
+클래스는 참조형이므로 위의 코드에서 click1의 필드를 변경하면 click2의 필도도 변경된다.
+### shallow copy
+```
+public class ShallowCopied implements Cloneable {
+    String title;
+    int no;       // 원시형 필드
+
+    int[] numbers;
+    Click click;
+    Click[] clicks; // 참조형 필드
+
+    public ShallowCopied(String title, int no, int[] numbers, Click click, Click[] clicks) {
+        this.title = title;
+        this.no = no;
+        this.numbers = numbers;
+        this.click = click;
+        this.clicks = clicks;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+}
+```
+얕은 복사의 경우 복사한 결과 서로 다른 객체가 된다.
+
+원시형 필드의 경우 기존 객체를 수정하더라도 복사한 필드에 영향을 주지 않지만, 참조형 필드의 경우 기존 객체의 필드를 수정하면 복사한 필드에도 영향을 준다.
+### deep copy
+```
+public class DeepCopied implements Cloneable {
+    String title;
+    int no;
+
+    int[] numbers;
+    Click click;
+    Click[] clicks;
+
+    public DeepCopied(String title, int no, int[] numbers, Click click, Click[] clicks) {
+        this.title = title;
+        this.no = no;
+        this.numbers = numbers;
+        this.click = click;
+        this.clicks = clicks;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        DeepCopied clone = (DeepCopied) super.clone(); // 원시 값들을 복사
+
+		// 참조형의 값을 복사
+		clone.numbers = new int[numbers.length];
+        for (var i = 0; i < numbers.length; i++) {
+            clone.numbers[i] = numbers[i];
+        }
+
+        clone.click = new Click(click.x, click.y);
+
+		// 배열과 같이 이중으로 참조형인(기존 클래스 참조 + 참조형 필드) 값들을 추가로 복사
+        clone.clicks = new Click[clicks.length];
+        for (var i = 0; i < clicks.length; i++) {
+            clone.clicks[i] = new Click(clicks[i].x, clicks[i].y);
+        }
+
+        return clone;
+    }
+}
+```
+깊은 복사를 실행하면 기존 객체를 수정하더라도 복사한 객체의 모든 필드가 영향을 받지 않는다.
+# Wrapper
+각 원시 자료형에는 그에 해당하는 래퍼 클래스가 존재한다.
+
+래퍼 클래스는 해당 자료형에 관련된 클래스 / 인스턴스 기능을 제공한다. 이러한 장점에도 원시값을 사용하는 이유는 성능이 좋기 때문이다.
+
+각 자료형의 원시값과 래퍼 클래스의 인스턴스와 서로 변환이 가능하다.
+
+|원시 자료형|래퍼 자료형|
+|---|---|
+|byte|Byte|
+|short|Short|
+|int|Integer|
+|long|Long|
+|float|Float|
+|double|Double|
+|char|Character|
+|boolean|Boolean|
+
+```
+public class Main1 {
+    public static void main(String[] args) {
+        //  원시 자료형
+        int int1 = 123;
+        double dbl1 = 3.14;
+        char chr1 = 'A';
+        boolean bln1 = true;
+
+        // Integer int2 = new Integer(123);
+        // Double dbl2 = new Double(3.14);
+        // Character chr2 = new Character('A');
+        // Boolean bln2 = new Boolean(true);
+
+        Integer int3 = Integer.valueOf(123);
+        Double dbl3 = Double.valueOf(3.14);
+        Character chr3 = Character.valueOf('A');
+        Boolean bln3 = Boolean.valueOf(true);
+    }
+}
+```
+`New <wrapper>();` 형식은 Deprecated되었고 `<wrapper>.valueOf()` 형식을 사용한다.
+## boxing, unboxing
+```
+int intPrim1 = 123;
+Integer intInst1 = Integer.valueOf(intPrim1);
+
+char chrPrim1 = 'A';
+Character chrInst1 = Character.valueOf(chrPrim1);
+
+Double dblInst1 = Double.valueOf(3.14);
+double dblPrim1 = dblInst1.doubleValue();
+
+Boolean blnInst1 = Boolean.valueOf(true);
+boolean blnPrim1 = blnInst1.booleanValue();
+```
+원시값을 래퍼 클래스 인스턴스로 만드는 것을 박싱이라하고,
+래퍼 클래스 인스턴스를 원시값으로 만드는 것을 언박싱이라 한다.
+### autoboxing, autounboxing
+```
+Integer intInst2 = 234;
+Double dblInst2 = 1.414213;
+
+char chrPrim2 = Character.valueOf('B');
+boolean blnPrim2 = Boolean.valueOf(false);
+
+int intPrim2 = intPrim1 + intInst2;
+Integer intInst3 = intPrim2 + intInst2;
+
+Integer intInst4 = add(3, 5);
+```
+박싱과 언박싱을 명시적으로 실행할 수 있으며 이를 오토박싱, 오토언박싱이라 부른다.
+
+또한 원시값, 래퍼 클래스의 값을 혼용해서 사용하는 것도 가능하다.
+## 래퍼 클래스 메소드
+### 숫자
+```
+int int2 = Integer.parseInt("123");
+
+int int_123_oct = Integer.parseInt("123", 8);     // int_123_oct: 83
+int int_123_dec = Integer.parseInt("123", 10);    // int_123_dec: 123
+
+int int3 = Integer.parseInt("1234567", 3, 5, 10); // int3: 45
+```
+`parseInt`는 String값을 숫자 자료형으로 바꾸는 메소드이다. `parseInt` 이외에도 `parseDouble, parseBoolean`등이 있다.
+
+`parseInt("123", 8)`의 경우 123을 8진수로 변경한다.
+
+`parseInt("1234567", 3, 5, 10)`의 경우 1234567을 10진수로 변경하고, 3번째 자리부터 (5 - 1)번째 자리까지를 반환한다.
+### 문자
+```
+Character.isLetter(c),
+Character.isUpperCase(c),
+Character.isLowerCase(c),
+Character.isDigit(c),
+Character.isSpaceChar(c)
+```
+처음부터
+- 문자인지
+- 대문자인지
+- 소문자인지
+- 숫자인지
+- 공백인지
+를 boolean 형식으로 반환한다.
+### 비교
+```
+Integer intA = 12345;
+Integer intB = 12345;
+
+boolean compByOp1 = intA == intB;      // false
+boolean compByEq1 = intA.equals(intB); // true
+```
+원시값과 동일하게 다른 객체이므로 `==`에서는 false가 나오고, `equals`를 사용하면 같은 값이므로 true를 리턴한다.
+***
+```
+Short srtA = 12345;
+
+boolean compByOp2 = intA.equals(srtA); //false
+```
+자료형이 다른 경우 값이 동일하더라도 false를 리턴한다.
+### 자료형 변환
+```
+Byte int1Byt = int1.byteValue();     // int1Byt: 123
+Double int1Dbl = int1.doubleValue(); // int1Dbl: 123
+
+Integer int4 = 123456789;
+Byte int4Byt = int4.byteValue();     // int4Byt: 21
+
+Float flt1 = 1234.5678f;
+Integer flt1Int = flt1.intValue();   // flt1Int: 1234
+Short int1DblSrt = int1Dbl.shortValue(); // int1DblSrt: 123	
+```
+`byteValue`는 숫자를 byte 자료형으로 변환하는데, 이때 값이 범위보다 크다면 overflow가 발생한다.
+
+`intValue, shortValue`는 각각 float의 자료형을 int, short로 변환한다. 그 과정에서 소수점이 제거된다.
+# 제네릭
+자료형을 동적으로 변경 가능하다.
+```
+public class Main {
+    public static void main(String[] args) {
+        double randDbl = pickRandom(12, 34);
+		boolean randBool = pickRandom(true, false);
+
+		//  double randFlt = pickRandom("hello", "world");
+    }
+
+    //  제네릭 메소드
+    public static <T> T pickRandom (T a, T b) {
+        return Math.random() > 0.5 ? a : b;
+    }
+```
+위는 2개의 인자에서 임의로 하나를 선택하는 코드이다.
+
+`T`는 타입 변수로 원하는 이름으로 명명 가능하게 한다. 즉 어떠한 자료형인지 지정하지 않은 채 사용할 수 있다.
+
+단 기존 메소드와 동일하게 리턴하는 값과 인자 값의 자료형이 동일하지 않으면 오류가 발생한다.
+## 제네릭 클래스
+```
+public class Pocket<T1, T2, T3> {
+    private T1 fieldA;
+    private T2 fieldB;
+    private T3 fieldC;
+
+    public Pocket(T1 fieldA, T2 fieldB, T3 fieldC) {
+        this.fieldA = fieldA;
+        this.fieldB = fieldB;
+        this.fieldC = fieldC;
+    }
+
+    public T1 getFieldA() {return fieldA;}
+    public T2 getFieldB() {return fieldB;}
+    public T3 getFieldC() {return fieldC;}
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Pocket<Double, Double, Double> size3d1 = new Pocket<>(123.45, 234.56, 345.67);
+
+        //  타입추론도 가능은 함
+        var size3d2 = new Pocket<>(123.45, 234.56, 345.67);
+
+        double width = size3d1.getFieldA();
+        double height = size3d1.getFieldB();
+        double depth = size3d1.getFieldC();
+
+        Pocket<String, Integer, Boolean> person = new Pocket<>("ligt", 20, false);
+
+        Pocket<String, Integer, Boolean>[] people = new Pocket[] {
+                new Pocket<>("ligt", 20, false),
+                new Pocket<>("muller", 30, true),
+                new Pocket<>("musiala", 27, true),
+        };
+    }
+}
+```
+제너릭 클래스를 사용하는 경우 인자를 래퍼 클래스로 받는다(원시 자료형은 사용 불가능).
+
+제네릭 클래스는 배열 생성시 new로 초기화해야 한다.
+## 제네릭 제한
+```
+public class Main {
+    public static void main(String[] args) {
+        descHuntingMamal(new PolarBear());
+        descHuntingMamal(new GlidingLizard()); // 오류 발생 -> Mamal 인터페이스를 만족하지 못함
+    }
+
+	public static <T extends Mamal & Hunter & Swimmer>
+	void descHuntingMamal (T animal)  {}
+	
+	public static <T extends Flyer & Hunter>
+	void descFlyingHunter (T animal) {}		
+}    
+```
+제네릭에서는 클래스와 인터페이스 모두 `extends`를 통해 상속받는다.
+
+상속받은 클래스와 인터페이스 조건을 만족시키지 못하면 오류가 발생한다.
+## 다형성
+```
+public class Unit {}
+
+public class Knight extends Unit {}
+public class MagicKnight extends Knight {}
+
+public class Horse<T extends Unit> {
+    private T rider;
+
+    public void setRider(T rider) {
+        this.rider = rider;
+    }
+}
+```
+Horse 클래스가 제네릭 클래스이며, 상속 방향은 아래와 같다.
+```
+Unit - Knight - MagicKnight
+     - Horse
+```
+```
+public class Main {
+    public static void main(String[] args) {
+        // 가장 상위 클래스
+        Horse<Unit> avante = new Horse<>(); // Horse<Unit>에서 Unit 생략
+        avante.setRider(new Unit());
+        avante.setRider(new Knight());
+        avante.setRider(new MagicKnight());
+
+        // 두번째로 높은 클래스
+        Horse<Knight> sonata = new Horse<>(); // Knight 생략
+//        sonata.setRider(new Unit()); // Knight의 부모 클래스는 사용 불가능
+        sonata.setRider(new Knight());
+        sonata.setRider(new MagicKnight());
+
+        // 가장 낮은 클래스
+        Horse<MagicKnight> grandeur = new Horse<>();
+//        grandeur.setRider(new Unit()); 
+//        grandeur.setRider(new Knight()); // MagicKnight의 부모 클래스로는 사용 불가능
+        grandeur.setRider(new MagicKnight());
+
+        //  자료형과 제네릭 타입이 일치하지 않으면 대입 불가
+        //  제네릭 타입이 상속관계에 있어도 마찬가지
+//        Horse<Unit> wrongHorse1 = new Horse<Knight>();
+//        Horse<Knight> wrongHorse2 = new Horse<Unit>(); // 자료형과 제네릭 타입이 다름
+//        avante = sonata;
+//        sonata = grandeur;
+
+        // Knight와 그 자식 클래스만 받을 수 있음
+        Horse<? extends Knight> knightHorse;
+//        knightHorse = new Horse<Unit>(); // ⚠️ 불가
+        knightHorse = new Horse<Knight>();
+        knightHorse = new Horse<MagicKnight>();
+//        knightHorse = avante; // ⚠️ 불가
+        knightHorse = sonata;
+        knightHorse = grandeur;
+
+        // Knight과 그 조상 클래스만 받을 수 있음
+        Horse <? super Knight> nonLuxuryHorse;
+        nonLuxuryHorse = avante;
+        nonLuxuryHorse = sonata;
+//        nonLuxuryHorse = grandeur; // 불가
+
+        // 제한 없음 - <? extends Object>와 동일
+        Horse<?> anyHorse;
+        anyHorse = avante;
+        anyHorse = sonata;
+        anyHorse = grandeur;
+    }
+}
+```
+부모 클래스 Unit으로 생성한 객체는 하위 클래스인 Knight, MagicKnight를 인자로 하는 메소드에서 사용 가능하다.
+
+반면 하위 클래스인 Knight로 생성한 객체는 부모 클래스인 Unit을 인자로 하는 메소드에서 사용 불가능하다.
+
+**제네릭 타입**
+- `<? extends Knight>`: `Knight` 클래스와 자손 클래스만 가능
+- `<? super Knight>`: `Knight` 클래스와 조상 클래스만 가능
+- `<?>`: 모든 클래스가 가능
