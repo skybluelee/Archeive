@@ -284,3 +284,138 @@ public class Main {
 숫자와 문자의 경우 크기를 비교할 수 있기 때문에 TreeSet을 바로 사용할 수 있다.
 
 반면 객체의 경우 크기 비교가 불가능하여 TreeSet을 사용할 수 없는데, 이때 `Comparable` 또는 `Comparator`를 사용하여 비교가 가능하게 만들어 TreeSet을 사용할 수 있다.
+# map
+key - value 쌍으로 구성되며, 키와 값의 자료형은 제한이 없다. 
+
+키값은 중복될 수 없다. 키가 중복되는 경우 새로운 값이 기존의 값을 대체한다.
+```
+public class Main {
+    public static void main(String[] args) {
+        Map<Integer, String> numNameHMap = new HashMap<>();
+        numNameHMap.put(1, "spark"); // numNameHMap: 1 -> "spark"
+        numNameHMap.put(2, "kafak");                 2 -> "kafka"
+        numNameHMap.put(3, "linux");                 3 -> "linux"
+
+        Map<Side, ArrayList<Unit>> sideUnitsHMap = new HashMap<>();
+        sideUnitsHMap.put(
+                Side.BLUE,
+                new ArrayList<>(
+                        Arrays.asList(
+                                new Swordman(Side.BLUE),
+                                new Knight(Side.BLUE),
+                                new MagicKnight(Side.BLUE))
+                )
+        );
+    }
+}
+```
+`Map<<key_type>, <value_type>> <map_name> = new <map_type><>();` 형식으로 초기화한다.
+
+numNameHMap의 경우 key를 int로 value를 string인 map이고
+
+sideUnitsHMap의 경우 key로 class 값을, value로 list를 받는다.
+## 메소드
+- `put(<key>, <value>)`
+    - 키와 값을 map에 입력
+- `putAll(map)`
+    - 인자로 주어진 map의 모든 값을 해당 map에 입력
+- `get(<key>)`
+    - key를 받아 value를 반환
+    - map에 해당 key가 없다면 `null`을 반환
+- `containsKey(<key>)`
+    - map에 해당 key가 있다면 true
+- `containsValue(<value>)`
+    - map에 해당 value가 있다면 true
+- `getOrDefault(<key>, <defaultValue>)`
+    - key가 있다면 value를 반환하고 없다면 defaultValue를 반환
+- `remove(<key>)`
+    - map에 key가 있다면 해당 요소를 삭제
+- `remove(<key>, <value>)`
+    - map에 해당 key, value가 있다면 해당 요소를 삭제
+- `isEmpty()`
+    - map이 비어있다면 true 반환
+- `clear()`
+    - map의 모든 요소 제거
+## key는 중복 불가
+```
+public class Main {
+    public static void main(String[] args) {
+        Map<Integer, String> numNameHMap = new HashMap<>();
+        numNameHMap.put(1, "spark"); // numNameHMap: 1 -> "spark"
+        numNameHMap.put(2, "kafak");                 2 -> "kafka"
+        numNameHMap.put(3, "linux");                 3 -> "linux"
+
+       var key_check = numNameHMap.keySet();
+        //  keySet을 활용한 for-each
+        for (var n : numNameHMap.keySet()) {
+            System.out.println(numNameHMap.get(n));
+        }
+    }
+}
+```
+key의 중복 불가 특성을 사용하여 value를 얻을 수 있다.
+`keySet()` 메소드를 사용하여 해당 map의 모든 key를 얻고, key를 for each문의 인자로 사용하여 모든 value를 얻을 수 있다.
+## Entry 인터페이스
+```
+public class Main {
+    public static void main(String[] args) {
+        Map<Integer, String> numNameHMap = new HashMap<>();
+        numNameHMap.put(1, "spark"); // numNameHMap: 1 -> "spark"
+        numNameHMap.put(2, "kafak");                 2 -> "kafka"
+        numNameHMap.put(3, "linux");                 3 -> "linux"
+
+       Set<Map.Entry<Integer, String>> numNameES = numNameHMap.entrySet();
+        for (var entry : numNameES) {
+            int key = entry.getKey();
+            String value = entry.getValue();
+            System.out.printf("k: %d, v: %s%n", key, value);
+            System.out.println(entry);
+        }
+    }
+}
+
+k: 1, v: spark
+1=spark
+k: 2, v: kafak
+2=kafak
+k: 3, v: linux
+3=linux
+```
+entry 인터페이스는 맵의 각 요소를 갖는다.
+
+map을 entry로 이어 받는 경우 `getKey()`와 `getValue()`를 사용하여 key와 value를 얻을 수 있다.
+## TreeMap
+TreeMap은 key를 트리 형태로 저장한다.
+
+정렬이 필요없고 빠른 접근이 필요한 경우 HashMap을, key 순으로 정렬이 필요한 경우는 TreeMap을 사용한다.
+```
+public class Main {
+    public static void main(String[] args) {
+        TreeMap<Integer, String[]> classKidsTMap = new TreeMap<>();
+        classKidsTMap.put(3, new String[] {"q", "w", "e"}); // classKidsTMap: 1 -> ["z", "x", "c"]
+        classKidsTMap.put(9, new String[] {"a", "s", "d"});                   3 -> ["q", "w", "e"]
+        classKidsTMap.put(1, new String[] {"z", "x", "c"});                   9 -> ["a", "s", "d"]
+
+        int firstKey = classKidsTMap.firstKey(); // firstKey: 1
+        int lastKey = classKidsTMap.lastKey();   // lastKey: 9
+
+        int ceil = classKidsTMap.ceilingKey(4);  // ceil: 3
+    }
+}
+```
+key의 순서대로 정렬되므로 `firstKey()`와 `lastKey()` 메소드를 통해 첫번째와 마지막 key를 확인할 수 있다.
+### 메소드
+- `ceilingKey(<key>)`
+    - 주어진 key가 없다면 트리구조상 바로 위의 key를 반환
+- `floorKey(<key>)`
+    - 주어진 key가 없다면 트리구조상 바로 아래의 key를 반환
+- `firstEntry()`
+    - map의 첫번째 요소를 반환
+    - Map.Entry<Integer, String[]> firstEntry = classKidsTMap.firstEntry(); // classKidsTMap: size = 3,
+- `lastEntry()`                                                                firstEntry: 1 -> ["z", "x", "c"]
+    - map의 마지막 요소를 반환
+- `pollFirstEntry()`
+    - map의 첫번째 요소를 꺼내서 반환
+    - Map.Entry<Integer, String[]> pollF1 = classKidsTMap.pollFirstEntry(); // classKidsTMap: size = 2, 
+- `pollLastEntry()`                                                            pollF1: 1 -> ["z", "x", "c"]
+    - map의 마지막 요소를 꺼내서 반환
