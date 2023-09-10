@@ -411,11 +411,11 @@ key의 순서대로 정렬되므로 `firstKey()`와 `lastKey()` 메소드를 통
     - 주어진 key가 없다면 트리구조상 바로 아래의 key를 반환
 - `firstEntry()`
     - map의 첫번째 요소를 반환
-    - Map.Entry<Integer, String[]> firstEntry = classKidsTMap.firstEntry(); // classKidsTMap: size = 3,
-- `lastEntry()`                                                                firstEntry: 1 -> ["z", "x", "c"]
+    - `Map.Entry<Integer, String[]> firstEntry = classKidsTMap.firstEntry(); // classKidsTMap: size = 3, firstEntry: 1 -> ["z", "x", "c"]`
+- `lastEntry()`                                                                
     - map의 마지막 요소를 반환
 - `pollFirstEntry()`
     - map의 첫번째 요소를 꺼내서 반환
-    - Map.Entry<Integer, String[]> pollF1 = classKidsTMap.pollFirstEntry(); // classKidsTMap: size = 2, 
-- `pollLastEntry()`                                                            pollF1: 1 -> ["z", "x", "c"]
+    - `Map.Entry<Integer, String[]> pollF1 = classKidsTMap.pollFirstEntry(); // classKidsTMap: size = 2, pollF1: 1 -> ["z", "x", "c"]`
+- `pollLastEntry()`                                                            
     - map의 마지막 요소를 꺼내서 반환
