@@ -419,3 +419,226 @@ key의 순서대로 정렬되므로 `firstKey()`와 `lastKey()` 메소드를 통
     - `Map.Entry<Integer, String[]> pollF1 = classKidsTMap.pollFirstEntry(); // classKidsTMap: size = 2, pollF1: 1 -> ["z", "x", "c"]`
 - `pollLastEntry()`                                                            
     - map의 마지막 요소를 꺼내서 반환
+# Comparable & Comparator
+`Comparable`은 자신과 다른 객체를 비교한다. 주로 숫자 클래스, 불리언, 문자열에 대해 비교한다.
+
+`Comparator`는 주어진 두 객체를 비교한다. Arrays의 정렬 메소드, TreeSet, TreeMap과 같은 컬렉션에서 정렬 기준으로 사용한다.
+## compareOf
+```
+public class Main {
+    public static void main(String[] args) {
+        Integer int1 = Integer.valueOf(1);
+        Integer int2 = Integer.valueOf(2);
+        Integer int3 = Integer.valueOf(3);
+
+        int _1_comp_3 = int1.compareTo(3);    // _1_comp_3: -1
+        int _2_comp_1 =  int2.compareTo(1);   // _2_comp_1: 1
+        int _3_comp_3 =  int2.compareTo(1);   // _3_comp_3: 1
+        int _t_comp_f = Boolean.valueOf(true).compareTo(Boolean.valueOf(false)); // _t_comp_f: 1
+        int _abc_comp_def = "ABC".compareTo("DEF");   // _abc_comp_def: -3
+        int _def_comp_abc = "efgh".compareTo("abcd"); // _def_comp_abc: 4
+    }
+}
+```
+`compareTo`의 인자보다 작은 경우 음수를, 같거나 큰 경우 양수를 리턴한다.
+## sort 
+```
+public class Main {
+    public static void main(String[] args) {
+        Integer[] nums = {3, 8, 1, 7, 4, 9, 2, 6, 5};
+        String[] strs = {
+                "Fox", "Banana", "Elephant", "Car", "Apple", "Game", "Dice"
+        };
+
+        Arrays.sort(nums); // nums: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        Arrays.sort(strs); // strs: ["Apple", "Banana", "Car", "Dice", "Elephant", "Fox", "Game"]
+    }
+}
+```
+`sort`는 `compareTo`에 의거하여 정렬한다. 이는 TreeSet, TreeMap도 마찬가지이다.
+### class를 통한 sort 커스터마이징
+```
+public class IntDescComp implements Comparator<Integer> {
+    @Override
+    public int compare(Integer o1, Integer o2) {
+        return o2 - o1;
+    }
+}
+
+public class CloseToInt implements Comparator<Integer> {
+    int closeTo;
+    public CloseToInt(int closeTo) {
+        this.closeTo = closeTo;
+    }
+    @Override
+    public int compare(Integer o1, Integer o2) {
+        return (Math.abs(o1 - closeTo) - Math.abs(o2 - closeTo));
+    }
+}
+```
+```
+public class Main {
+    public static void main(String[] args) {
+        Integer[] nums = {3, 8, 1, 7, 4, 9, 2, 6, 5};
+
+        Arrays.sort(nums, new IntDescComp()); // nums: [9, 8, 7, 6, 5, 4, 3, 2, 1]
+        Arrays.sort(nums, new CloseToInt(5)); // nums: [5, 6, 4, 7, 3, 8, 2, 9, 1]
+    }
+}
+```
+`a.compareTo(b)`는 a가 b보다 크거나 같으면 양수를 리턴하고 작으면 음수를 리턴한다.
+
+`IntDescComp`클래스는 이와 반대로 a가 b보다 크거나 같으면 음수를 리턴하고, 작으면 양수를 리턴한다.
+`sort`는 `compareTo`에 의거하여 정렬하는데, 정렬 방식이 반대가 되므로 역순으로 정렬된다.
+
+`CloseToInt`클래스는 인자와 해당 값의 크기(절댓값) 차이를 반환하는 방식으로 인자와 가까운 순서대로 정렬한다.
+***
+```
+public class Main {
+    public static void main(String[] args) {
+        String[] strs = {
+                "Fox", "Banana", "Elephant", "Car", "Apple", "Game", "Dice"
+        };
+
+        // 익명 클래스
+        Arrays.sort(strs, new Comparator<String>() {  // sort 클래스에 override
+            @Override
+            public int compare(String o1, String o2) {
+                return o1.length() - o2.length();
+            }
+        });
+        // strs: ["Car", "Fox", "Dice", "Game", "Apple", "Banana", Elephant"]
+    }
+}
+```
+첫번째 익명 클래스의 경우 해당 단어 크기가 인자 단어 크기보다 크거나 같으면 양수를 리턴하므로 단어 크기가 클 수록 뒤에 배치된다.
+***
+```
+public class Main {
+    public static void main(String[] args) {
+        Integer[] nums = {3, 8, 1, 7, 4, 9, 2, 6, 5};
+
+        ArrayList<Integer> numsAry = new ArrayList<>(Arrays.asList(nums));
+        numsAry.sort(new IntDescComp());
+        // numsAry: [9, 8, 7, 6, 5, 4, 3, 2, 1]
+    }
+}
+```
+list도 sort를 사용할 수 있다.
+### sort override를 통한 클래스 객체간 비교
+```
+public class UnitSorter implements Comparator<Unit> {
+    @Override
+    public int compare(Unit o1, Unit o2) {
+        var result = getClassPoint(o2) - getClassPoint(o1);
+        if (result == 0) result = o1.hashCode() - o2.hashCode();
+        return result;
+    }
+
+    public int getClassPoint (Unit u) {
+        int result = u.getSide() == Side.RED ? 10 : 0;
+        if (u instanceof Swordman) result += 1;
+        if (u instanceof Knight) result += 2;
+        if (u instanceof MagicKnight) result += 3;
+        return result;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        TreeSet<Unit> unitTSet = new TreeSet<>(new UnitSorter());
+        for (var u : new Unit[] {
+                new Knight(Side.BLUE),
+                new Knight(Side.BLUE), // 중복
+                new Swordman(Side.RED),
+                new Swordman(Side.RED), // 중복
+                new MagicKnight(Side.BLUE),
+                new Swordman(Side.BLUE),
+                new MagicKnight(Side.RED),
+                new Knight(Side.RED)
+        }) {
+            unitTSet.add(u);
+        }
+    }
+}
+```
+`UnitSorter`클래스는 `compare` 메소드를 override하여 각 객체의 수치의 차를 반환한다. 그 결과 수치가 높은 객체가 뒤로 배치된다.
+
+이때 동일한 수치가 존재하는 객체에 대한 예외처리가 존재하지 않는다면 compare하지 못하므로 오류가 발생한다.
+### enum을 사용한 오름차순, 내림차순
+```
+public class Person implements Comparable<Person> {
+    private static int lastNo = 0;
+    private int no;
+    private String name;
+    private int age;
+    private double height;
+
+    public Person(String name, int age, double height) {
+        this.no = ++lastNo;
+        this.name = name;
+        this.age = age;
+        this.height = height;
+    }
+
+    public int getNo() { return no; }
+    public String getName() { return name; }
+    public int getAge() { return age; }
+    public double getHeight() { return height; }
+
+    @Override // 실제 사용하지는 않지만 Comparable 인터페이스를 참조하는 경우 작성해야 함
+    public int compareTo(Person p) {
+        return this.getName().compareTo(p.getName());
+    }
+}
+
+public class PersonComp implements Comparator<Person> {
+    public enum SortBy { NO, NAME, AGE, HEIGHT }
+    public enum SortDir { ASC, DESC }
+
+    private SortBy sortBy;
+    private SortDir sortDir;
+
+    public PersonComp(SortBy sortBy, SortDir sortDir) {
+        this.sortBy = sortBy;
+        this.sortDir = sortDir;
+    }
+
+    @Override
+    public int compare(Person o1, Person o2) {
+        int result = 0;
+        switch (sortBy) {
+            case NO: result = o1.getNo() > o2.getNo() ? 1 : -1; break;
+            case NAME: result = o1.getName().compareTo(o2.getName()); break;
+            case AGE: result = o1.getAge() > o2.getAge() ? 1 : -1; break;
+            case HEIGHT: result = o1.getHeight() > o2.getHeight() ? 1 : -1; break;
+        }
+        return result * (sortDir == SortDir.ASC ? 1 : -1);
+        // sort의 정렬 순서는 +, -로 결정되므로 결과값의 부호를 바꿔주는 방식으로 정렬 순서를 바꿀 수 있다.
+    }
+}
+
+public class Main2 {
+    public static void main(String[] args) {
+        TreeSet[] treeSets = {
+                new TreeSet<>(),
+                new TreeSet<>(new PersonComp(PersonComp.SortBy.NO, PersonComp.SortDir.DESC)),
+                new TreeSet<>(new PersonComp(PersonComp.SortBy.AGE, PersonComp.SortDir.ASC)),
+                new TreeSet<>(new PersonComp(PersonComp.SortBy.HEIGHT, PersonComp.SortDir.DESC))
+        };
+
+        for (var p : new Person[] {
+                new Person("lucia", 20, 174.5),
+                new Person("serena", 28, 170.2),
+                new Person("vera", 24, 183.7),
+                new Person("karenina", 32, 168.8),
+                new Person("liv", 18, 174.1),
+        }) {
+            for (var ts: treeSets) {
+                ts.add(p);
+            }
+        }
+    }
+}
+
+```
