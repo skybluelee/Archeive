@@ -591,7 +591,8 @@ public class Person implements Comparable<Person> {
         return this.getName().compareTo(p.getName());
     }
 }
-
+```
+```
 public class PersonComp implements Comparator<Person> {
     public enum SortBy { NO, NAME, AGE, HEIGHT }
     public enum SortDir { ASC, DESC }
@@ -617,7 +618,8 @@ public class PersonComp implements Comparator<Person> {
         // sort의 정렬 순서는 +, -로 결정되므로 결과값의 부호를 바꿔주는 방식으로 정렬 순서를 바꿀 수 있다.
     }
 }
-
+```
+```
 public class Main2 {
     public static void main(String[] args) {
         TreeSet[] treeSets = {
@@ -640,5 +642,104 @@ public class Main2 {
         }
     }
 }
-
 ```
+# iterator
+컬렉션을 순회하는데 사용한다.
+
+for each문과 다르게 원하는 만큼만 진행할 수 있다.
+## 메소드
+```
+public class Main {
+    public static void main(String[] args) {
+        Set<Integer> intHSet = new HashSet<>(
+                Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9)
+        );
+
+        Iterator<Integer> intItor = intHSet.iterator(); // 이터레이터 초기화
+
+        Integer int1 = intItor.next(); // int1: 1
+        Integer int2 = intItor.next(); // int2: 2
+        Integer int3 = intItor.next(); // int3: 3
+
+        // hasNext : 순회할 값이 남았는가
+        boolean hasNext = intItor.hasNext(); //hasNext: true
+
+        intItor = intHSet.iterator(); // 순회 초기화
+    }
+}
+```
+## 이터레이터를 통한 값 제거
+```
+public class Main {
+    public static void main(String[] args) {
+        ArrayList<Integer> num_list = new ArrayList<>(
+                Arrays.asList(1, 2, 3, 4, 5, 6)
+        );
+
+        Set<Integer> intHSet = new HashSet<>(num_list);
+        Iterator<Integer> intItor = intHSet.iterator();
+
+        // foreach 문으로 시도하면 오류
+        for (Integer num : intHSet) {
+            if (num % 3 == 0) intHSet.remove(num);
+        }
+
+        for (int i = 0; i < 10; i++) {
+            if (i % 3 == 0){
+                intHSet.remove(i);
+            }
+        } 
+
+        while (intItor.hasNext()) {
+            if (intItor.next() % 3 == 0) {
+                intItor.remove();
+            }
+        } // intHSet: [1, 2, 4, 5]
+    }
+}
+```
+`for-each`문이 이터레이터를 사용하기 때문에 이터레이터 사용을 통한 제거가 불가능하다.
+
+반면 `for`와 `for-each`는 매커니즘이 다르기 때문에 요소를 순회하면서 해당 요소를 제거할 수 있다.
+
+이터레이터를 통해 제거하는 경우 `while`을 사용하면 제거할 수 있다. 이 경우 기존 변수인 `intHSet`와 `intItor`에서 해당 요소가 제거된다.
+## map의 이터레이터
+```
+public class Main {
+    public static void main(String[] args) {
+        Map<Integer, Double> hashMap = new HashMap<>();
+        for (var i = 0; i < 10; i++) {
+            hashMap.put(i + 1, i * 10);
+        }
+
+        Iterator<Integer> hmKeyItor = hashMap.keySet().iterator();  // key를 순회하는 이터레이터
+        Iterator<Double> hmValueItor = hashMap.values().iterator(); // value를 순회하는 이터레이터
+        Iterator<Map.Entry<Integer, Double>> hmEntryItor = hashMap.entrySet().iterator(); // 키와 값을 포함한 요소를 순회하는 이터레이터
+
+        // 아래의 3개의 while문을 통과해도 hashMap에는 영향이 없음
+        while (hmKeyItor.hasNext()) {
+            int i = hmKeyItor.next();
+            if (i % 3 == 0) hmKeyItor.remove();
+        }
+        while (hmValueItor.hasNext()) {
+            double d = hmValueItor.next();
+            if (d < 5) hmValueItor.remove();
+        }
+        while (hmEntryItor.hasNext()) {
+            Map.Entry<Integer, Double> e = hmEntryItor.next();
+            if (e.getKey() % 2 == 0) {
+                hmEntryItor.remove();
+            }
+        }
+
+        for (int i = 0; i < 10; i++) {
+            if (i % 3 == 0){
+                hashMap.remove(Integer.valueOf(i));
+            }
+        }
+    }
+}
+```
+map에서 이터레이터를 사용하는 경우 map에 바로 사용하는 것이 아닌 key 혹은 value를 받고 해당 변수에 대해 이터레이터를 사용한다.
+
+따라서 이터레이터에서 값을 삭제하더라도 map에는 영향을 미치지 못한다. map에서 순회하며 특정 값을 삭제하기 위해서는 `for`문에서 `remove()`로 요소를 제거할 수 있다.
