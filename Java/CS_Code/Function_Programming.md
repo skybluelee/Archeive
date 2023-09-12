@@ -690,4 +690,189 @@ public class Main {
 ```
 `peak`은 방식 자체는 `forEach`와 동일하지만, `forEach`와 다르게 진행 중인 스트림에 영향을 주지 않는다.
 
-출력에서 순회하면서 조건에 따른 값의 변화를 확인할 수 있지만 최종 스트림에는 홀수 제곱 역순의 문자열만이 존재한다.
+출력에서 순회하면서 조건에 따른 값의 변화를 확인할 수 있지만 최종 스트림에는 필터링된 홀수 제곱 역순의 문자열만이 존재한다.
+### allMatch, anyMatch
+```
+public class Main {
+    public static void main(String[] args) {
+        Integer[] ints = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+        boolean match1 = Arrays.stream(ints).allMatch(i -> i > 0);       // match1: true
+
+        boolean match2 = Arrays.stream(ints).allMatch(i -> i % 2 == 0);  // match2: false
+
+        boolean match3 = Arrays.stream(ints).anyMatch(i -> i < 0);       // match3: false
+
+        boolean match4 = Arrays.stream(ints).anyMatch(i -> i % 2 == 0);  // match4: true
+    }
+}
+```
+`allMatch`는 순회하는 값이 조건을 모두 만족하면 true를 반환하고,
+
+`anyMatch`는 순회하는 값이 하나라도 만족하면 true를 반환한다.
+### takeWhile, dropWhile, count
+```
+public class Main {
+    public static void main(String[] args) {
+        Integer[] ints = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+        long take = Arrays.stream(ints)
+                         .takeWhile(i -> i < 4)
+                         .peek(System.out::println)
+                         .count();
+        // take: 3
+        System.out.println("\n- - - - -\n");
+        long drop = Arrays.stream(ints)
+                         .dropWhile(i -> i < 4)
+                         .peek(System.out::println)
+                         .count();
+        // drop: 6
+    }
+}
+
+1
+2
+3
+- - - - -
+4
+5
+...
+9
+```
+`takeWhile`은 조건이 true인 데이터만 가져오고, `dropWhile`은 조건이 false인 데이터만 가져온다.
+
+`count`는 최종 스트림 요소의 개수를 반환한다.
+### sum
+```
+public class Main {
+    public static void main(String[] args) {
+        int intsSum = IntStream.range(0, 100 + 1)      // intsSum: 816
+                .filter(i -> i % 2 == 0 && i % 3 == 0)
+                .sum();
+    }
+}
+```
+`sum`은 최종 스트림 요소의 합을 반환한다.
+### iterate
+```
+public class Main {
+    public static void main(String[] args) {
+        double doubleSum = DoubleStream.iterate(3.14, i -> i * 2)  // doubleSum: 3212.22
+                .limit(10)
+                .peek(System.out::println)
+                .sum();
+    }
+}
+
+3.14
+6.28
+...
+```
+`iterate`은 해당 조건을 반복한다.
+### reduce
+```
+public class Main {
+    public static void main(String[] args) {
+        int intReduce = IntStream.range(1, 10)
+                .reduce((prev, curr) -> prev * curr)
+                .getAsInt(); // 필요함
+
+        int intReduceWithSeed = IntStream.range(1, 10)
+                .reduce(2, (prev, curr) -> prev * curr);
+    }
+}
+```
+mapreduce의 reduce 동작과 동일하다. 2개의 값을 하나로 바꾸는 연산을 최종값이 하나가 될 때까지 반복한다.
+
+`reduce`의 인자가 2개인 경우 prev, curr은 첫번째, 두번째 요소이다. intReduce의 경우 prev: 1, curr:2 이다.
+
+`reduce`의 인자가 3개인 경우 prev는 첫번째 인자, curr은 첫번째 요소이다. intReduceWithSeed의 경우 prev: 2, curr: 1 이다.
+
+`reduce`의 인자가 3개인 경우 첫번째 인자를 seed라고 하는데, seed가 없다면 해당 연산의 결과를 예상할 수 없어 `getAsInt`메소드를 사용하였다.
+seed가 있다면 해당 메소드 없이 사용할 수 있다.
+## 클래스 객체 사용
+```
+public class Person implements Comparable<Person> {
+    private static int lastNo = 0;
+    private int no;
+    private String name;
+    private int age;
+    private double height;
+    private boolean married;
+
+    public Person(String name, int age, double height, boolean married) {
+        this.no = ++lastNo;
+        this.name = name;
+        this.age = age;
+        this.height = height;
+        this.married = married;
+    }
+
+    public int getNo() { return no; }
+    public String getName() { return name; }
+    public int getAge() { return age; }
+    public double getHeight() { return height; }
+
+    public boolean isMarried() {return married;}
+
+    @Override
+    public int compareTo(Person p) {
+        return this.getName().compareTo(p.getName());
+    }
+
+    @Override
+    public String toString() {
+        return "no: %d, name: %s, age: %d, height: %f, married: %b"
+                .formatted(no, name, age, height, married);
+    }
+}
+```
+```
+public class Main2 {
+    public static void main(String[] args) {
+        String[] names = {"luna", "lamia", "vera", "nanami", "rozeta"};
+
+        Stream<String> nameStream = Arrays.stream(names);
+
+        Random random = new Random();
+        random.setSeed(4); // 균일한 결과를 위해 지정된 시드값
+        var people = nameStream
+                .map(name -> new Person(
+                        name,
+                        random.nextInt(18, 35),
+                        random.nextDouble(160, 190),
+                        random.nextBoolean()
+                ))
+                .sorted()
+                //.sorted((p1, p2) -> p1.getHeight() > p2.getHeight() ? 1 : -1)        // 키 순으로 정렬
+                //.sorted((p1, p2) -> Boolean.compare(p1.isMarried(), p2.isMarried())) // true가 앞에 오도록 정렬
+                .toList();
+
+        var peopleLastNameSet = people.stream()
+                .map(p -> p.getName().charAt(0))
+                .collect(Collectors.toList()); // ArrayList
+                //.collect(Collectors.toSet()); // HashSet
+                //.collect(Collectors.toCollection(ArrayList::new));
+                //.collect(Collectors.toCollection(LinkedList::new));
+                //.collect(Collectors.toCollection(TreeSet::new));
+        // toList와 toSet은 ArrayList, HashSet으로 변환
+        // LinkedList, TreeSet의 경우 명시해야 함
+
+
+        var peopleHMapByMarried = people.stream()
+                .collect(Collectors.groupingBy(Person::isMarried));
+        // groupingBy를 사용하면 해당 조건(isMarried)과 해당 값으로 나누는 HashMap이 된다.
+        var marrieds = peopleHMapByMarried.get(true);
+        // get메소드를 사용하여 key가 true인 값만을 가지고 오며 이때 marrieds는 ArrayList이다.
+
+        IntSummaryStatistics ageStats = people.stream()
+                .map(Person::getAge)
+                .collect(Collectors.summarizingInt(Integer::intValue));
+        summarizingInt는 숫자를 가지고 개수, 합, 최솟값, 최댓값, 평균을 보여준다.
+
+        DoubleSummaryStatistics heightStats = people.stream()
+                .map(Person::getHeight)
+                .collect(Collectors.summarizingDouble(Double::doubleValue));
+    }
+}
+```
