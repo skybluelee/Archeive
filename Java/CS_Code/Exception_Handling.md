@@ -373,3 +373,141 @@ public class Main4 {
 Caused by: java.lang.ArrayIndexOutOfBoundsException: Index 7 out of bounds for length 6
 ...
 ```
+# try with resource
+사용한 뒤 닫아주어야 하는 리소스를 `try`문을 사용하여 제어할 때 `finally`를 사용하여 리소스를 닫아야 했는데, 만약 실수로 닫지 않았다면
+메모리를 계속해서 차지하고 있기 때문에 오류가 발생할 가능성이 있다.
+
+이때 리소스를 닫는 행위 자체를 `try`문에서 실행한다면 위와 같은 오류를 방지할 수 있다.
+```
+public class Main {
+    public static void main(String[] args) {
+        var correctPath = "./src/sec09/chap04/turtle.txt";
+        var wrongPath = "./src/sec09/chap04/rabbit.txt";
+
+        openFile(correctPath);
+        openFile(wrongPath);
+    }
+
+    public static void openFile1 (String path) {
+        Scanner scanner = null;
+        try {
+            scanner = new Scanner(new File(path));
+            while (scanner.hasNextLine()) {
+                System.out.println(scanner.nextLine());
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            System.out.println("close the scanner");  // 기존 방식: finally문에서 리소스를 닫음
+            if (scanner != null) scanner.close();
+        }
+    }
+
+    public static void openFile2 (String path) {
+        try (Scanner scanner = new Scanner(new File(path))) {  // try with resource문을 사용한 방식
+            while (scanner.hasNextLine()) {
+                System.out.println(scanner.nextLine());
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.out.printf("%s no file!%n", path);
+        }
+    }
+}
+```
+`try with resource`는
+```
+try (자원을 초기화하는 코드) {
+    // 자원을 사용하는 코드
+} catch (예외 타입) {
+    // 예외 처리 코드
+}
+```
+형식으로 이루어지며, 리소스를 초기화하는 코드에 scanner를 넣어 구현하였다.
+# NPE, Optional
+null값을 잘못 사용하면 NPE(NullPointerException)가 발생한다. 이를 방지하는 것인 Optional이다.
+
+`Optional<T>`는 `null`일 수도 있는 `T` 타입의 값으로 `null` 일 수 있는 값을 보다 안전하고 간편하게 사용하기 위해 사용한다.
+## Optional.of
+```
+Optional<String> catOpt = Optional.of("Cat");
+```
+`Optional.of`는 인자가 무조건 null이 아닐 때 사용한다. 인자에 null값이 들어오면 NPE가 발생한다.
+## Optional.ofNullable
+```
+Optional<String> dogOpt = Optional.ofNullable("Dog"); // dogOpt: "Optional[Dog]"   - value = "Dog"
+Optional<String> cowOpt = Optional.ofNullable(null);  // cowOpt: "Optional.empty"  - value = null
+```
+`Optional.ofNullable`은 인자에 null 값이 와도 오류가 발생하지 않는다.
+## Optional.empty
+```
+Optional<String> henOpt = Optional.empty();
+```
+처음부터 null 값을 넣고자 한다면 `Optional.empty`를 사용한다.
+## ifPresent, ifPresentOrElse
+```
+public class Main {
+    public static void main(String[] args) {
+        randomUnitOpts.stream()
+                .forEach(opt -> {
+                    opt.ifPresent(unit -> System.out.println(unit));
+
+                    opt.ifPresentOrElse(
+                          unit -> System.out.println(unit),       // consumer
+                          () -> System.out.println("(no value)")  // runner
+                    );
+
+					opt.orElse("no value")  // runner
+                    );
+                });
+    }
+}
+```
+`ifPresent`는 consumer로 인자를 받아 실행한다. 위의 경우 optional에 값이 있다면 해당 메소드를 실행한다.
+
+`ifPresentOrElse`는 인자를 2개 받는데, 첫번째 인자는 optional에 값이 있다면 인자가 존재하는 해당 메소드를 실행하고, 두번째 인자는 runner로 인자 없는 메소드를 실행한다.
+
+`orElse`는 supplier로 값이 null인 경우 지정한 메소드를 반환한다.
+## 스트림의 경우
+```
+public class Main {
+    public static void main(String[] args) {
+        List<Optional<Integer>> optInts = new ArrayList<>();
+        IntStream.range(0, 20)
+                .forEach(i -> {
+                    optInts.add(Optional.ofNullable(
+                            new Random().nextBoolean() ? i : null
+                    ));
+                });
+
+        optInts.stream()
+                .forEach(opt -> {
+                    System.out.println(
+                            opt.filter(i -> i % 2 == 1)            // 짝수라면
+                               .map(i -> "%d 출력".formatted(i))   // 문자열을 출력
+                               .orElse("(SKIP)")                   // (SKIP)-문자열을 println함
+                    );
+                });
+    }
+}
+
+(SKIP)
+(SKIP)
+(SKIP)
+(SKIP)
+(SKIP)
+(SKIP)
+(SKIP)
+7 출력
+...
+```
+스트림에서 filter + Optional 메소드를 사용하는 경우 해당 값이 null일 때 값을 제거하는 것이 아닌 원하는 메소드를 실행한다.
+## 메소드
+- `isPresent()`
+	- Optional에 값이 있다면(null이 아니면) true
+- `isEmpty()`
+	- Optional에 값이 null이면 true
+- `get()`
+	- Optional에 값이 있다면 리턴, 없다면 NPE 발생
+- `orElse(<value>)`
+	- Optional에 값이 있다면 리턴, 없다면 value 리턴
