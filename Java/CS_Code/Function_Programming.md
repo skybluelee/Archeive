@@ -132,7 +132,7 @@ public class Main {
 |함수형 인터페이스|메소드|인자|반환 타입|
 |----------------|-----|----|-----------|
 |`Runnable`|`run`|||
-|`Supplier<T>|`get`||`T`|
+|`Supplier<T>`|`get`||`T`|
 |`Consumer<T>`|`accept`|||
 |`BiConsumer<T, U>`|`accept`|||
 |`Function<T, R>`|`apply`|`T`|`R`|
