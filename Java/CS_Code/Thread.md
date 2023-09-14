@@ -280,3 +280,486 @@ deamon working
 3. 데몬 쓰레드 객체를 `setDaemon(true)` 메소드를 사용하여 데몬 쓰레드로 정의한다.
 4. 메인 쓰레드 내에서 데몬 쓰레드를 `start()`한다.
 5. 메인 메소드에서 메인 쓰레드를 `start()`한다.
+# 쓰레드 풀
+많은 쓰레드 작업이 필요할 때 너무 많은 쓰레드 작업으로 인한 부하를 방지하기 위해 동시에 돌아가는 쓰레드들의 개수를 제한하는 방식이다.
+
+쓰레드를 그때그때 생성 혹은 제거하지 않고, 주어진 개수만큼 쓰레드들을 만든 후 재사용한다.
+```
+public class Cave {
+    private int water = 40;
+
+    public int getWater() {
+        return water;
+    }
+    public void pump() {
+        if (getWater() > 0) water--;
+    }
+}
+```
+```
+public class VolunteerRun implements Runnable {
+    private static int lastNo = 0;
+    private static int working = 0;
+
+    private int no;
+    private Cave cave;
+
+    public VolunteerRun(Cave cave) {
+        this.no = ++lastNo;
+        this.cave = cave;
+
+        System.out.printf("thread num: %d, water: %d%n", no, cave.getWater());
+    }
+
+    @Override
+    public void run() {
+        working++;
+        System.out.printf("thread num: %d, thread count: %d, water: %d%n", no, working, cave.getWater());
+
+        try { Thread.sleep(5000);
+        } catch (InterruptedException e) {
+
+            working--;
+            System.out.printf("thread-%d terminated, thread count: %d, water: %d%n",no, working, cave.getWater()
+            );
+            return;
+        }
+
+        cave.pump();
+        working--;
+        System.out.printf(
+                "thread-%d completed, thread count: %d, water: %d%n",
+                no, working, cave.getWater()
+        );
+    }
+}
+```
+```
+public class Main {
+    public static void main(String[] args) {
+        // ExecutorService: 쓰레드풀을 관리하는 라이브러리 클래스
+        ExecutorService es = Executors.newFixedThreadPool(
+                5 // 쓰레드 풀에서 동시에 일할 수 있는 최대 쓰레드 수
+                  // = 스레드 풀 크기 = 풀의 최대 쓰레드 수
+        );
+
+        Cave cave = new Cave();
+
+        while (cave.getWater() > 20) {            
+            es.execute(new VolunteerRun(cave)); // execute : 쓰레드를 대기열에 추가
+
+            try { Thread.sleep(500);
+            } catch (InterruptedException e) { return; }
+        }
+
+        es.shutdown();  // 쓰레드 풀을 종료하고, 현재 실행 중인 작업을 마치고 종료
+        // es.execute(new VolunteerRun(cave)); // shutdown이후에 쓰레드를 추가하면 예외 발생
+
+        //  shutdownNow : 쓰레드 풀을 즉시 종료
+        //  각 쓰레드에 InterruptedException을 발생, 즉 쓰레드 강제 종료가 아님
+        //  작업 진행중인 쓰레드의 강제 종료는 InterruptedException에 대해 명령을 작성해야 함
+        //List<Runnable> waitings = es.shutdownNow(); // 작업이 끝난 쓰레드 재사용 가능
+                                                      // 기존 쓰레드 재사용을 확인하기 위해 list로 생성
+        //System.out.println(waitings);
+    }
+}
+
+
+```
+`es.shutdown()`의 경우 작업이 전부 중지된 후 종료된다.
+
+`es.shutdownNow()`의 경우 작업이 중간에 종료된다.
+# Future
+비동기적 연산의 결과로, 비동기 작업은 작업이 백그라운드에서 실행되고, 작업이 완료될 때까지 메인 스레드 또는 다른 작업을 차단하지 않고 계속 실행할 수 있도록 만든다.
+```
+public class Main3 {
+    public static void main(String[] args) {
+        ExecutorService es = Executors.newSingleThreadExecutor();
+            Future<String> callAnswer = es.submit(() -> {
+            Thread.sleep(2000);
+            return "future answered";
+        });
+
+        // isDone : 퓨쳐의 태스크가 종료되었는지 여부 확인
+        while (!callAnswer.isDone()) {
+            System.out.println("Future Checking");
+            try { Thread.sleep(400);
+            } catch (InterruptedException e) {}
+        }
+
+        String result = null;
+        try { result = callAnswer.get();
+        } catch (InterruptedException | ExecutionException e) {}
+
+        System.out.println("Status: " + result);
+        System.out.println("Main Method");
+
+        es.shutdown();
+    }
+}
+
+Future Checking
+Future Checking
+Future Checking
+Future Checking
+Future Checking
+Status: future answered
+Main Method
+```
+Future는 Callable로 제네릭에 반환하는 값의 자료형을 명시한다.
+
+작동 방식은 아래와 같다.
+1. `get()` 메소드를 호출하기 전까지 백그라운드에서 실행된다.
+2. future 쓰레드의 종료를 확인한다. 위에서는 `isDone` 메소드를 사용했다.
+3. `get()` 메소드를 사용하여 결과를 받아온다. 이 작업이 끝나기 전까지 이외의 작업은 전부 막힌다(블로킹).
+4. future 쓰레드가 종료되고 메인 쓰레드에서 막혔던 작업이 시작된다.
+# CompletableFuture
+Future보다 편리한 기능을 제공한다.
+- 연속되는 작업들을 비동기적으로 함수형으로 작성
+- 여러 비동기 작업들을 조합하고, 병렬적으로 실행 가능
+- 예외 처리를 위한 기능들 제공
+## 생성
+```
+package sec11.chap07;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            supplyAsyncEx();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void takeTime (boolean error) {
+        try {
+            int randMilliSec = new Random().nextInt(1000, 1500);
+            Thread.sleep(randMilliSec);
+            System.out.printf("... %f 초 경과 ...%n", randMilliSec / 1000.0);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        if (error) throw new RuntimeException("오류 발생");
+    }
+
+    public static void supplyAsyncEx () throws ExecutionException, InterruptedException {
+        CompletableFuture<String> getHello = CompletableFuture.supplyAsync(() -> {
+            takeTime(false);
+            return "Hello";
+        });
+
+        System.out.println("- - - get 사용 전 - - -");
+
+        String hello = getHello.get();
+
+        System.out.println("- - - get 사용 후 - - -");
+        System.out.println(hello);
+    }
+}
+
+- - - get 사용 전 - - -
+... 1.343000 초 경과 ...
+- - - get 사용 후 - - -
+Hello
+```
+`CompletableFuture`를 생성하는 메소드 `supplyAsync`는 Supplier를 받아 비동기 작업 실행한다. Supplier는 인자는 없고, 반환값은 있어 제네릭에 명시한다.
+
+Future와 동일하게 `get` 메소드를 사용하면 블로킹이 발생하고, 해당 값을 받기 전까지 다음 코드의 진행을 막는다(이 순간은 비동기가 아님). 값을 받은 후 메인 쓰레드가 진행된다.
+## thenAccept
+```
+public class Main {
+    public static void main(String[] args) {
+        thenAcceptEx1();
+    }
+
+    public static void takeTime (boolean error) {
+        try {
+            int randMilliSec = new Random().nextInt(1000, 1500);
+            Thread.sleep(randMilliSec);
+            System.out.printf("... %f 초 경과 ...%n", randMilliSec / 1000.0);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        if (error) throw new RuntimeException("오류 발생");
+    }
+
+    public static void thenAcceptEx1 () throws ExecutionException, InterruptedException {
+        CompletableFuture<String> getHello = CompletableFuture.supplyAsync(() -> {
+            System.out.println("값 받아오기 시작");
+            takeTime(false);
+            return "Hello";
+        });
+
+        CompletableFuture<Void> printHello = getHello.thenAccept(s -> {
+            System.out.println("받아온 값 처리 시작");
+            takeTime(false);
+            System.out.println(s);
+        });
+
+        System.out.println("- - - 중간에 다른 코드들 진행 - - -");
+
+        printHello.get();
+}
+
+값 받아오기 시작
+- - - 중간에 다른 코드들 진행 - - -
+... 1.434000 초 경과 ...
+받아온 값 처리 시작
+... 1.296000 초 경과 ...
+Hello
+```
+`thenAccept` 메소드는 Consumer로 인자를 사용하고, 반환값은 없다. 위의 경우 인자 `s`는 `getHello`의 반환값 `"Hello"`이다.
+
+`get` 메소드를 호출한 후에 `thenAccept` 이하의 작업이 실행된다(동기). 호출하기 전까지는 실행할 일을 지정했을 뿐이다(비동기).
+***
+```
+public static void thenAcceptEx2 () throws ExecutionException, InterruptedException {
+    CompletableFuture<Void> print5nums = CompletableFuture.supplyAsync(() -> {
+            List<Integer> ints = new ArrayList<>();
+            IntStream.range(0, 5).forEach(i -> {
+                takeTime(false);
+                ints.add(i);
+            });
+            return ints;
+        }).thenAccept(list -> {
+            takeTime(false);
+            list.stream().forEach(System.out::println);
+        });
+
+        System.out.println("- - - 중간에 다른 코드들 진행 - - -");
+
+        print5nums.get();
+    }
+```
+`CompletableFuture`의 제니릭 자료형이 `Void`인 이유는 최종 결과인 `thenAccept`에서의 반환값이 없기 때문이다.
+
+위와 다르게 객체를 생성해서 각각 메소드를 실행하지 않고 하나로 묶어서 실행했다.
+## thenApply
+```
+public class Main {
+    public static void main(String[] args) {
+        thenApplyEx1();
+    }
+
+    public static void thenApplyEx1 () throws ExecutionException, InterruptedException {
+        CompletableFuture.supplyAsync(() -> {
+            takeTime(false);   // ... 1.175000 초 경과 ...
+            return new Random().nextInt(0, 6) + 1;
+
+        }).thenApply(
+                //  💡 thenApply : 얻어온 값을 Function에 넣어 다른 값 반환
+                //  - 스트림의 map과 비슷
+                i -> {
+                    takeTime(false);   // ... 1.277000 초 경과 ...
+                    return "이번 숫자: " + i;
+                }
+        ).thenAccept(
+                System.out::println
+        ).get();
+    }
+
+        System.out.println("- - - 중간에 다른 코드들 진행 - - -");
+
+        printHello.get();
+}
+
+... 1.175000 초 경과 ...
+... 1.277000 초 경과 ...
+이번 숫자: 2
+```
+`thenApply`는 Function으로 인자를 받고, 반환값이 존재한다. 위의 경우 `i`는 `new Random().nextInt(0, 6) + 1`의 값이다.
+
+`thenAccept`의 람다식은 `thenAccept(s -> System.out.println(s))`로 `"이번 숫자: " + i`이 인자이다.
+## exceptionally
+```
+public class Main {
+    public static void main(String[] args) {
+        exceptionallyEx(true); // 오류 발생
+    }
+
+    public static void exceptionallyEx (Boolean error) throws ExecutionException, InterruptedException {
+        CompletableFuture.supplyAsync(() -> {
+            takeTime(error);
+            return "ㅇㅇ 안녕";
+
+        }).exceptionally(e -> {
+            e.printStackTrace();
+            return "안녕 못해.";
+        }).thenApply(s -> {
+            takeTime(false);
+            return "대답: " + s;
+        }).thenAccept(
+                System.out::println
+        ).get();
+    }
+}
+
+... 1.105000 초 경과 ...
+대답: 안녕 못해.
+```
+`exceptionally`는 `Optional`의 `OrElse`와 유사하게 오류가 발생하면 해당 값을 반환한다.
+
+단 `OrElse`나 `try catch`처럼 오류 발생을 해결하는 것이 아닌 오류가 발생과 값 리턴이 둘 다 발생한다.
+## thenCompose, thenCombine
+```
+public class Main {
+    public static void main(String[] args) {
+        thenComposeEx();
+        thenCombineEx();  // 동일한 결과
+    }
+
+    public static void thenComposeEx () throws ExecutionException, InterruptedException {
+
+        CompletableFuture<Swordman> getBlueChamp = getChamp(Side.BLUE);
+        CompletableFuture<Swordman> getRedChamp = getChamp(Side.RED);
+
+        System.out.println("\n===== 양 진영 검사 훈련중 =====\n");
+
+        //  💡 thenCompose : 두 CompleteFuture의 결과를 조합
+        //  -  ⭐️ 두 작업이 동시에 진행됨 주목
+        getBlueChamp.thenCompose(
+                        b -> getRedChamp.thenApply(
+                                r -> {
+                                    if (b.hp == r.hp) throw new RuntimeException();
+                                    return b.hp >= r.hp ? b : r;
+                                })
+                )
+                .thenApply(Swordman::toString)
+                .thenApply(s -> "🏆 승자 : " + s)
+                .exceptionally(e -> "⚔ 무승부")
+                .thenAccept(System.out::println)
+                .get();
+    }
+
+    public static void thenCombineEx () {
+        CompletableFuture<Swordman> getBlueChamp = getChamp(Side.BLUE);
+        CompletableFuture<Swordman> getRedChamp = getChamp(Side.RED);
+
+        System.out.println("\n===== 양 진영 검사 훈련중 =====\n");
+
+        try {
+            getBlueChamp.thenCombine(
+                            getRedChamp,
+                            (b, r) -> {
+                                if (b.hp == r.hp) throw new RuntimeException();
+                                return b.hp >= r.hp ? b : r;
+                            })
+                    .thenApply(Swordman::toString)
+                    .thenApply(s -> "🏆 승자 : " + s)
+                    .exceptionally(e -> "⚔ 무승부")
+                    .thenAccept(System.out::println)
+                    .get();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+`thenCompose, thenCombine` 두 메소드 모두 2개의 비동기 쓰레드를 하나의 쓰레드로 합치는 역할을 한다. 다만 문법에서 차이를 보이낟.
+
+`thenCompose`의 경우 `thenCompose(<instance1>.thenApply(<instance2>; <실행문>))` 형식이고,
+
+`thenCombine`의 경우 `<instance1>.thenCombine(<instance2>; <실행문>)` 형식이다.
+## allOf
+```
+public class Main {
+    public static void main(String[] args) {
+        allOfEx1();
+    }
+
+    public static CompletableFuture<Integer> rollDiceFuture () {
+        return CompletableFuture.supplyAsync(() -> {
+                    System.out.println("주사위 굴림");
+
+                    takeTime(new Random().nextBoolean());
+                    var result = new Random().nextInt(0, 6) + 1;
+                    System.out.println("🎲 : " + result);
+                    return result;
+                }
+        ).exceptionally(e -> -1); // 예외 대비
+    }
+
+    public static void allOfEx1 () throws ExecutionException, InterruptedException {
+        var roll1 = rollDiceFuture();
+        var roll2 = rollDiceFuture();
+        var roll3 = rollDiceFuture();
+        var roll4 = rollDiceFuture();
+        var roll5 = rollDiceFuture();
+
+        CompletableFuture.allOf(
+                roll1, roll2, roll3, roll4, roll5
+        ).thenRun(() -> {
+            // 프린트 순서 확인
+            System.out.println("결과 모두 나옴");
+
+            var int1 = roll1.join();
+            var int2 = roll2.join();
+            var int3 = roll3.join();
+            var int4 = roll4.join();
+            var int5 = roll5.join();
+
+            String result = IntStream.of(int1, int2, int3, int4, int5)
+                    .boxed()
+                    .map(i -> i == -1 ? "(무효)" : String.valueOf(i))
+                    .collect(Collectors.joining(", "));
+            System.out.println("최종 결과 : " + result);
+        }).get();
+    }
+}
+```
+`allOf`는 `thenCompose, thenCombine`와 달리 여러개의 CompletableFuture 쓰레드를 동시에 진행할 수 있다.
+
+`thenRun` 메소드는 결과들을 동기적으로 종합한다.
+## anyOf
+```
+public class Main {
+    public static void main(String[] args) {
+        allOfEx1();
+    }
+
+    public static CompletableFuture<Integer> rollDiceFuture () {
+        return CompletableFuture.supplyAsync(() -> {
+                    System.out.println("주사위 굴림");
+
+                    takeTime(new Random().nextBoolean());
+                    var result = new Random().nextInt(0, 6) + 1;
+                    System.out.println("🎲 : " + result);
+                    return result;
+                }
+        ).exceptionally(e -> -1); // 예외 대비
+    }
+
+    public static void anyOfEx () throws ExecutionException, InterruptedException {
+        ArrayList<CompletableFuture<String>> runners = new ArrayList<>();
+
+        String[] names = "A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U"
+                         .split(",");
+
+        ForkJoinPool forkJoinPool = new ForkJoinPool(names.length);
+
+        Arrays.stream(names)
+              .forEach(r -> runners.add(raceRunner(r, forkJoinPool)));
+
+        //  💡 anyOf : 가장 먼저 완료된 결과물을 받아옴
+        CompletableFuture.anyOf(
+                        runners.stream()
+                                .toArray(CompletableFuture[]::new)
+                )
+                .thenAccept(w -> {
+                    System.out.println(
+                            w != null
+                                    ? ("🏆 1등: " + w)
+                                    : "💣 지뢰 폭발"
+                    );
+                })
+                .get();
+    }
+}
+```
+`allOf`가 CompletableFuture의 모든 쓰레드의 값을 가져온다면 `anyOf`는 가장 먼저 완료된 결과물을 받아온다.
