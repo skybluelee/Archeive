@@ -763,3 +763,124 @@ public class Main {
 }
 ```
 `allOf`가 CompletableFuture의 모든 쓰레드의 값을 가져온다면 `anyOf`는 가장 먼저 완료된 결과물을 받아온다.
+# 병렬 스트림
+일반적으로 직렬보다 성능이 좋다. 하지만 데이터 크기가 작은 경우나 순차적으로 처리해야 하는 작업등은 병렬 스트림이 더 느리므로 작업의 특성을 고려해야 한다.
+## 병렬 스트림 생성
+```
+public class Main {
+    public static void main(String[] args) {
+        Stream<Character> stream1 = Stream.of('A', 'B', 'C');
+        var bool1 = stream1.isParallel(); // bool1: false
+
+        stream1.parallel();
+        var bool2 = stream1.isParallel(); // bool2: true
+
+        stream1.sequential();
+        var bool3 = stream1.isParallel(); // bool3: false
+    }
+}
+```
+`parallel()` 메소드를 사용하여 직렬 스트림을 병렬 스트림으로 변경할 수 있고,
+
+`sequential()` 메소드를 사용하여 병렬 스트림을 직렬 스트림으로 변경할 수 있다.
+***
+```
+public class Main {
+    public static void main(String[] args) {
+        Stream<Integer> stream2 = Arrays.asList(1, 2, 3, 4, 5)
+                .parallelStream();
+
+        List<Double> dblList = new ArrayList<>(
+                Arrays.asList(1.23, 2.34, 3.45)
+        );
+        Stream<Double> stream3 = dblList.parallelStream();
+    }
+}
+```
+`parallelStream()` 메소드를 사용하여 처음부터 병렬 스트림으로 생성할 수 있다.
+## 직렬 vs 병렬
+`map`과 `filter`의 경우 병렬이 직렬보다 성능이 더 좋고,
+
+`reduce`의 경우 순차 실행이므로 직렬이 병렬보다 성능이 더 좋다.
+
+`sum`의 경우 양이 많으면 병렬의 성능이 더 좋지만, 양이 적으면 직렬의 성능이 더 좋다.
+
+작업에 따라 직렬과 병렬을 적절히 선택해야 하고 아래와 같이 직렬과 병렬을 동시에 사용할 수도 있다.
+```
+package sec11.chap08;
+
+import java.util.stream.IntStream;
+
+public class Main2 {
+    public static void main(String[] args) {
+        final int RANGE = 10000000;
+
+        measureTime("mixed", () -> {
+            var tri = IntStream.range(0, TRI_RANGE)
+                    .parallel()
+                    .filter(i -> i % 2 == 0)
+                    .map(i -> i + 1)          // filter, map 작업은 병렬로
+                    .sequential() 
+                    .reduce(Integer::sum);    // reduce 작업은 직렬로 수행
+        });
+    }
+```
+# Thread 관련 클래스
+쓰레드 중복을 해결하는 클래스
+## ConcurrentHashMap
+```
+public class Main {
+    public static void main(String[] args) {
+        Map<String, Integer> concurrentHashMap = new ConcurrentHashMap<>();
+
+        Runnable toConcurrHashMap = () -> {
+            for (int i = 0; i < 10000; i++) {
+                concurrentHashMap.put("key" + i, i);
+            }
+        };
+
+        measureTime("Concurrent 해시맵", () -> {
+            Thread t1 = new Thread(toConcurrHashMap);
+            Thread t2 = new Thread(toConcurrHashMap);
+            Thread t3 = new Thread(toConcurrHashMap);
+
+            t1.start(); t2.start(); t3.start();
+            try {
+                t1.join(); t2.join(); t3.join();
+            } catch (InterruptedException e) {}
+        });
+    }
+}
+```
+`ConcurrentHashMap`은 맵을 구획으로 분할하여 각 구획에 대해 동기화를 적용한다. 즉 쓰레드가 서로 다른 구획에 접근하여 작업한다.
+## Atomic
+```
+public class Main3 {
+
+    static int count = 0;
+    static AtomicInteger atomicCount = new AtomicInteger(0);
+
+    public static void main(String[] args) {
+        Runnable incCount = () -> {
+            for (int i = 0; i < 10000; i++) {
+                count++;
+                atomicCount.getAndIncrement();
+            }
+        };
+
+        Thread t1 = new Thread(incCount);
+        Thread t2 = new Thread(incCount);
+        Thread t3 = new Thread(incCount);
+
+        t1.start(); t2.start(); t3.start();
+
+        try {
+            t1.join(); t2.join(); t3.join();
+        } catch (InterruptedException e) {}
+
+        int result = count;
+        int atomicResult = atomicCount.get();
+    }
+}
+```
+`Atomic` 클래스는 한 번에 하나의 쓰레드만 접근이 가능하므로 특정 변수에 대해 쓰레드로부터의 안전을 제공한다.
