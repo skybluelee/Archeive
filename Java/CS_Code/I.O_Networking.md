@@ -417,3 +417,169 @@ public class Main3 {
 `DataInoutStream`, `DataOutputStream` 클래스는 `.bin` 파일과 같이 사용자가 읽는 것이 아닌 저장하는 용도에 주로 사용한다.
 
 위와 같이 파일을 생성한 경우 파일을 읽을 때 생성한 순서대로, 정확한 자료형으로만 값을 제대로 확인할 수 있다.
+# Reader, Writer
+`InputStream`과 `OutputStream`은 바이트 기반 스트림을 처리할 때 사용하고,
+
+문자 기반 스트림은 `Reader` 와 `Writer`를 사용한다.
+## FileReader, BufferedReader, InputStreamReader
+**`FileReader`, `FileWriter`의 경우**
+```
+public static void fileReaderWriterEx () {
+    Charset charset = StandardCharsets.UTF_8;    
+    try (
+            FileReader fr = new FileReader(
+                    SONG_PATH, charset
+            );
+            FileWriter fw = new FileWriter(
+                    SONG_PATH.replace("beatles", "beatles_1")
+                    , charset
+            )
+    ) {    
+        int c;  // 문자를 숫자로 받고 형변환
+        while ((c = fr.read()) != -1) {
+            System.out.print((char) c);
+            fw.write(c);
+        }
+    
+    } catch (IOException e) {
+        throw new RuntimeException(e);
+    }
+}
+```
+각 문자를 하나씩 받고 출력한다.
+***
+**`BufferedReader`, `BufferedWriter`의 경우**
+```
+public static void bufferedReaderWriterEx () {
+    Charset charset = StandardCharsets.UTF_8;    
+    try (
+            FileReader fr = new FileReader(
+                    SONG_PATH, charset      // 디폴트는 8192바이트, 인자로 바이트 설정 가능
+            );
+            BufferedReader br = new BufferedReader(fr);
+            FileWriter fw = new FileWriter(
+                    SONG_PATH.replace("beatles", "beatles_2")
+                    , charset
+            );
+            BufferedWriter bw = new BufferedWriter(fw);
+    ) {    
+        String line; // 한 줄씩 읽음
+        while ((line = br.readLine()) != null) {
+            System.out.println(line);
+            bw.write(line);
+            bw.newLine(); // 줄 바꿈
+        }    
+    } catch (IOException e) {
+        throw new RuntimeException(e);
+    }
+}
+```
+한 줄씩 받아 읽고 출력한다.
+***
+**`FileInputStream  - InputStreamReader - BufferedReader`, `FileOutputStream - OutputStreamWriter - BufferedWriter`의 경우**
+```
+public static void ioStreamReaderWriterEx () {
+    Charset charset = StandardCharsets.UTF_8;
+    try (
+            // 디폴트는 8192바이트, 인자로 바이트 설정 가능
+            FileInputStream fis = new FileInputStream(SONG_PATH);
+            InputStreamReader ir = new InputStreamReader(fis, charset);
+            BufferedReader br = new BufferedReader(ir);
+            FileOutputStream fos = new FileOutputStream(
+                    SONG_PATH.replace("beatles", "beatles_3")
+            );
+            OutputStreamWriter ow = new OutputStreamWriter(fos, charset);
+            BufferedWriter bw = new BufferedWriter(ow);
+    ) {
+    
+        String line;
+        while ((line = br.readLine()) != null) {
+            System.out.println(line);
+            bw.write(line);
+            bw.newLine(); // 줄 바꿈
+        }
+    
+    } catch (IOException e) {
+        throw new RuntimeException(e);
+    }
+}
+```
+한 줄씩 받아 읽고 출력한다.
+***
+**결론**
+성능은 `InputStreamReader`와 `OuputStreamWriter`를 사용하는 코드가 가장 좋다. 
+
+하지만 코드가 복잡하기 때문에 성능이 우선 사항이 아니라면 코드가 간단한 `FileReader/FileWriter` 혹은 `BufferedReader/BufferedWriter`를 사용한다.
+# StringReader, StringWriter
+문자열 데이터를 메모리에서 읽거나 쓸 때 사용한다.
+
+대용량 문자열에 대한 텍스트 처리에 적합하다.
+```
+public class Main3 {
+    public static void main(String[] args) {
+        String csvTxt = ""
+                + "1, 2, 3, 4, 5\n"
+                + "6, 7, 8, 9, 10\n"
+                + "11, 12, 13, 14, 15\n"
+                + "16, 17, 18, 19, 20\n"
+                + "21, 22, 23, 24, 25"
+                ;
+        List<Integer[]> fromCsv = new ArrayList<>();
+        
+        try (
+                StringReader sr = new StringReader(csvTxt);
+                BufferedReader br = new BufferedReader(sr);
+        ) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                fromCsv.add(
+                        Arrays.stream(
+                                line.replace(" ", "").split(",")
+                        ).map(Integer::parseInt)
+                        .toArray(Integer[]::new)
+                );
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+numbers.csv
+1, 4, 9, 16, 25
+36, 49, 64, 81, 100
+121, 144, 169, 196, 225
+256, 289, 324, 361, 400
+441, 484, 529, 576, 625
+```
+`FileReader, BufferedReader, InputStreamReader`와 다르게 메모리에 담긴 값을 읽고 쓸 수 있다.
+# 번외 - print
+```
+public class Main4 {
+    public static void main(String[] args) {
+        String PRINT_PATH = "src/sec12/chap04/print.txt";
+
+        PrintStream ps = null;
+        FileOutputStream fos = null;
+
+        try {
+            fos = new FileOutputStream(PRINT_PATH);
+            ps = new PrintStream(fos);
+
+            System.setOut(ps);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+        System.out.println("hello");
+        System.out.printf("%s!%n", "world");
+    }
+}
+
+print.txt
+hello
+world!
+```
+`print`의 경로를 `PrintStream`과 `FileOutputStream`를 사용하여 변경하면 `print`한 결과가 해당 파일로 생성된다.
+
+System의 out은 `PrintStream`이므로 다른 스트림과 동일하게 경로로 write할 수 있다.
