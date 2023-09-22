@@ -707,3 +707,239 @@ public class Main2 {
 앞서 `.bin` 파일과 동일하게 생성한 순서대로 역직렬화를 실시해야 한다.
 
 직렬화를 사용하여 필드를 저장한 경우 기본적으로 이전 값이 그대로 나오지만, `transient`를 선언한 필드의 값은 `null`값이 나오는 것을 확인할 수 있다.
+# URL
+## 기본 클래스와 메소드
+```
+public class Main {
+    public static void main(String[] args) throws MalformedURLException { // URL에 대한 오류 throw
+        URL url1 = new URL("https://showcases.yalco.kr/java/index.html");
+
+        URL url2 = new URL("https://showcases.yalco.kr");
+        URL url3 = new URL(url2, "/java/index.html");
+        URL url4 = new URL("https://example.com/path/to/resource?param=value")
+
+        String url1Str = url1.toExternalForm(); // url1Str: https://showcases.yalco.kr/java/index.html
+        String url3Str = url3.toExternalForm(); // url3Str: https://showcases.yalco.kr/java/index.html
+        boolean sameUrl = url1.equals(url3);    // sameUrl: true
+
+        // 전체 url을 문자열로 반환
+        String content = url4.toExternalForm(); // "https://example.com/path/to/resource?param=value"
+        // 파일 이름 + 쿼리 문자열
+        String file = url4.getFile();           // "/path/to/resource?param=value"
+        // 파일 이름
+        String path = url4.getPath();           // "/path/to/resource"
+        // 호스트 부분
+        String host = url4.getHost();           // "example.com"
+        // 사용 포트
+        long port = url4.getPort();             // -1
+        // 디폴트 포트
+        long defPort = url4.getDefaultPort();   // 443
+    }
+}
+```
+`URL` 클래스는 인자가 하나인 경우 해당 문자열의 url 객체를 생성한다. 인자가 두 개인 경우 첫번째 url 객체에 두번째 인자를 추가한 객체를 생성한다.
+## 인터넷 연결
+```
+public class Main2 {
+    public static void main(String[] args) throws IOException {
+        URL yalco = new URL("https://showcases.yalco.kr");
+        URL home = new URL(yalco, "/java/index.html");
+
+        URLConnection conn = home.openConnection();
+
+        try(
+                InputStream is = conn.getInputStream();
+
+                var isr = new InputStreamReader(is);
+                var br = new BufferedReader(isr);
+
+                var sw = new StringWriter();
+                var pr = new PrintWriter(sw)
+        ) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                pr.printf("%s%n", line);
+            }
+            System.out.println(sw);
+        }
+    }
+}
+```
+`openConnection` 메소드를 사용하여 해당 링크에 접속할 수 있다.
+
+`URLConnection`의 객체 `conn`은 html 정보를 담고 있으며 위 코드는 html의 각 라인을 출력한다.
+# 소켓 통신
+## TCP
+TCP의 경우 UDP에 비해 속도가 느리지만, 데이터 전송 순서를 보장하고 상대방의 수신 여부에 따라 자동 재전송을 실행한다.
+```
+public class TCPServer {
+    public static final String SERVER_IP = "127.0.0.1";
+    public static final int PORT_NO = 1234;
+
+    public static void main(String[] args) {
+
+        try (
+                ServerSocket serverSkt = new ServerSocket(PORT_NO)
+        ) {
+            while (true) {   // 서버는 계속 켜져있어야 함
+                try (
+                        Socket clientSkt = serverSkt.accept();
+
+                        var is = clientSkt.getInputStream();
+                        var isr = new InputStreamReader(is);
+                        var br = new BufferedReader(isr);
+                        var sw = new StringWriter();
+                        var piw = new PrintWriter(sw);
+
+                        var os = clientSkt.getOutputStream();
+
+                        var pow = new PrintWriter(os, true); // autoflush: true
+                ) {
+                    String line;
+                    int lineCount = 1;
+                    while ((line = br.readLine()) != null) {
+                        piw.printf(
+                                "%3d :  %s%n".formatted(
+                                        lineCount++, line
+                                )
+                        );
+                        // 클라이언트에게 수신
+                        pow.printf("수신: %s %n".formatted(line.substring)), line.length();
+                    }
+                    System.out.println(sw);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+TCP 서버는 `ServerSocket` 클래스 객체를 생성하여 `try with resource`문에서 서버 소켓을 생성한 상태로 진행한다.
+
+이후 서버는 계속 켜져있는 상태여야 하므로 `while(1)`을 사용해 무한 반복 상태로 만들고 입력과 출력 코드를 작성한다.
+
+서버로 들어오는 값은 `getInputStream` 메소드를 사용하고, 클라이언트로 전송할 값은 `getOutputStream` 메소드를 사용한다.
+
+`PrintWriter` 메소드의 `true`는 autoflush를 의미하는데, 이는 값을 수신받는 즉시 이하의 코드를 실행하는 명령이다.
+```
+public class TCPClient {
+    public static String lyric = "";
+
+    public static void main(String[] args) {
+        try (
+                Socket socket = new Socket(SERVER_IP, PORT_NO);
+
+                var os = socket.getOutputStream();
+                var pw = new PrintWriter(os, true); // autoflush
+
+                var is = socket.getInputStream();
+                var isr = new InputStreamReader(is);
+                var br = new BufferedReader(isr);
+        ) {
+            for (var line : lyric.split("\n")) {
+                pw.println(line);
+                System.out.println(br.readLine());
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+클라이언트는 서버 IP, 포트 번호를 인자로 하는 소켓을 생성하고, 해당 소켓에 연결한다.
+
+서버와 동일하게 수신받는 메소드와 송신하는 메소드는 `getInputStream, getOutputStream`이다.
+## UDP
+UDP는 TCP에 비해 속도가 빠르지만 순서를 보장하지 않는다.
+```
+public class UDPServer {
+    public static final int PORT_NO = 2345;
+
+    public static void main(String[] args) {
+        try (DatagramSocket serverSkt = new DatagramSocket(PORT_NO)) {
+            while (true) {
+                byte[] receiveData = new byte[1024];
+                DatagramPacket receivePacket = new DatagramPacket(
+                        receiveData, receiveData.length
+                );
+
+                serverSkt.receive(receivePacket);
+
+                String received = new String(
+                        receivePacket.getData(),
+                        0, receivePacket.getLength()
+                );
+                System.out.println(received);
+
+                for (var i = 0; i < 9; i++) {
+                    var answer = received + (i + 1);
+                    byte[] toSend = answer.getBytes();
+
+                    // 송신
+                    DatagramPacket sendPacket = new DatagramPacket(
+                            toSend,                         
+                            toSend.length,                  
+                            receivePacket.getAddress(),     
+                            receivePacket.getPort()         
+                    );
+
+                    serverSkt.send(sendPacket);
+                }
+            }
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+        }
+    }
+}
+```
+UDP의 경우 `DatagramSocket` 클래스를 통해 소켓 객체를 생성한다. 인자로 포트 번호를 지정한다.
+
+UDP는 순서를 보장할 필요가 없기 때문에 `DatagramPacket` 클래스로 생성한 객체에 생성한 바이트 배열을 인자로 지정하여 값을 한번에 수신한다.
+이때 필요한 인자는 4가지로 수신할 값, 값의 크기, IP 주소, 포트 번호를 인자로 지정한다.
+
+수신과 송신은 TCP에 비해 간결한데 `DatagramSocket` 클래스의 객체에 `receive, send` 메소드를 통해 값을 수신하고 송신할 수 있다.
+
+순서 상관 없이 전송하기 때문에 TCP와 달리 autoflush 기능이 존재하지 않는다.
+```
+public class UDPClient {
+    public static final String SERVER_IP = "127.0.0.1";
+
+    public static void main(String[] args) {
+        try (DatagramSocket clientSkt = new DatagramSocket()) {
+            InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
+
+            for (var i = 0; i < 100; i++) {
+                byte[] sendData = ("click " + (i + 1)).getBytes();
+                DatagramPacket sendPacket = new DatagramPacket(
+                        sendData,
+                        sendData.length,
+                        serverAddr,
+                        PORT_NO
+                );
+
+                clientSkt.send(sendPacket);
+
+                byte[] receiveData = new byte[1024];
+                DatagramPacket receivePacket = new DatagramPacket(
+                        receiveData, receiveData.length
+                );
+
+                for (var j = 0; j < 9; j++) {
+                    clientSkt.receive(receivePacket);
+
+                    String response = new String(
+                            receivePacket.getData(),
+                            0, receivePacket.getLength()
+                    );
+                    System.out.println(response);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
