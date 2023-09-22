@@ -583,3 +583,127 @@ world!
 `print`의 경로를 `PrintStream`과 `FileOutputStream`를 사용하여 변경하면 `print`한 결과가 해당 파일로 생성된다.
 
 System의 out은 `PrintStream`이므로 다른 스트림과 동일하게 경로로 write할 수 있다.
+# Serialization
+직렬화는 인스턴스를 바이트 스트림으로 변환하며, 인스턴스를 다른 곳에 보내거나 파일 등으로 저장하기 위해 사용한다.
+## 클래스와 필드의 직렬화
+```
+public class Person implements Serializable {
+    // serialVersionUID : 클래스의 버전 번호로 사용
+    private static final long serialVersionUID = 1L;
+    private String name;
+    private int age;
+    private double height;
+    private boolean married;
+
+    transient private String bloodType;
+    transient private double weight;
+
+    private Career career;
+
+    public Person(
+            String name, int age, double height, boolean married,
+            String bloodType, double weight, Career career
+    ) {
+        this.name = name;
+        this.age = age;
+        this.height = height;
+        this.married = married;
+        this.bloodType = bloodType;
+        this.weight = weight;
+        this.career = career;
+    }
+}
+```
+```
+public class Career implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private String company;
+    private int years;
+
+    public Career(String company, int years) {
+        this.company = company;
+        this.years = years;
+    }
+}
+```
+해당 클래스에 직렬화를 사용하기 위해서는 `Serializable` 인터페이스를 implements해야 한다.
+
+이 경우 클래스 내의 모든 필드는 자동으로 직렬화의 대상이 된다. 이때 특정 필드에 대해 직렬화를 원하지 않는 다면 `transient`를 사용하여 직렬화에서 제외할 수  있다.
+
+직렬화 클래스에 다른 클래스의 필드도 직렬화를 하려면 해당 클래스도 `Serializable` 인터페이스를 implements해야 한다.
+
+`serialVersionUID`는 클래스의 버전 번호로 동일한 값을 사용해야 직렬화, 역직렬화가 가능하다.
+## 직렬화, 역직렬화
+```
+public class Main {
+    public static String PEOPLE_PATH = "src/sec12/chap05/people.ser";
+    public static void main(String[] args) {
+        Person person1 = new Person(
+                "홍길동", 20, 175.5, false, "AB", 81.2, new Career("ABC Market", 2)
+              // name, age, height, married, bloold, weight, career
+              // blood type과 weight는 직렬화 대상이 아님  
+        );
+
+        List<Person> people = new ArrayList<>();
+        people.add(person1);
+        people.add(new Person(
+                "임꺽정", 45, 162.8, true,
+                "A", 68.3,
+                new Career("Koryeo Inc.", 20)
+        ));
+        people.add(new Person(
+                "붉은매", 24, 185.3, false,
+                "B", 79.3,
+                new Career("Cocoa", 30)
+        ));
+
+        try (
+                FileOutputStream fos = new FileOutputStream(PEOPLE_PATH);
+                BufferedOutputStream bos = new BufferedOutputStream(fos);
+                ObjectOutputStream oos = new ObjectOutputStream(bos);
+        ) {
+            oos.writeObject(person1);
+            oos.writeObject(person2);
+            oos.writeObject(people);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+```
+`FileOutputStream - BufferedOutputStream - ObjectOutputStream`을 사용하여 인스턴스를 스트림으로 출력한다.
+
+`.ser` 파일이 생성되며, 이는 읽기 위한 파일이 아닌 저장용 파일이다.
+```
+public class Main2 {
+    public static String PEOPLE_PATH = "src/sec12/chap05/people.ser";
+    public static void main(String[] args) {
+        Person person1Out;
+        List<Person> peopleOut;
+
+        try (
+                FileInputStream fis = new FileInputStream(PEOPLE_PATH);
+                BufferedInputStream bis = new BufferedInputStream(fis);
+                ObjectInputStream ois = new ObjectInputStream(bis);
+        ) {
+
+            person1Out = (Person) ois.readObject();
+            // person1Out: name="홍길동", age=20, height=175.5, married=false, bloodType=null, weight=0.0, career-company="ABC Market", year=2
+            peopleOut = (ArrayList) ois.readObject();
+            // size = 4
+            // 0 - name="홍길동", ...
+            // 1 - name="임꺽정", ...
+            // 2 - name="붉은매", ...
+
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+`FileInputStream - BufferedInputStream - ObjectInputStream`으로 인스턴스를 역직렬화한다.
+
+앞서 `.bin` 파일과 동일하게 생성한 순서대로 역직렬화를 실시해야 한다.
+
+직렬화를 사용하여 필드를 저장한 경우 기본적으로 이전 값이 그대로 나오지만, `transient`를 선언한 필드의 값은 `null`값이 나오는 것을 확인할 수 있다.
