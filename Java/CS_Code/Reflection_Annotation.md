@@ -363,3 +363,281 @@ public class MyClass {
 }
 ```
 두 Repeatable 인터페이스 연계 없이 단독으로 지정한 경우 반복이 불가능하다.
+## 어노테이션 만들기
+### 값 설정 - 단일 값
+```
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Count {
+    // int value();        // 기본값이 없을 때
+    int value() default 1; // 기본값 설정
+}
+```
+어노테이션에서는 필드를 메소드처럼 생성한다.
+
+필드 이름은 보통 `value`로 설정한다.
+```
+public class Main {
+    //  <필드명> = <값>
+    @Count(value = 3)
+    private int apples;
+    // apple의 값이 3
+
+    // default(기본 값) 설정시 값 지정 필요 없음
+    @Count
+    private int bananas;
+    // bananas의 값이 1
+
+    // 필드가 하나고 필드명이 value일 시
+    // 값만 넣을 수 있음
+    @Count(5)
+    private int cacaos;
+}
+```
+### 값 설정 - 복수 값
+```
+@Retention(RetentionPolicy.RUNTIME)
+public @interface PersonName {
+    String first();
+    String last();
+}
+```
+필드 생성 방식은 단일 값과 동일하다.
+```
+public class Main {
+    // <필드명> = <값>
+    // 인자 순서는 바뀌어도 상관 없음
+    @PersonName(last = "홍", first = "길동")
+    private Object seller;
+}
+```
+### 어노테이션 사용
+어노테이션에서 다른 어노테이션을 사용할 수 있다.
+```
+@PersonInfo(
+        personName = @PersonName(last = "전", first = "우치"),
+        age = 30,
+        married = true
+)
+private Object sellerInfo;
+```
+`PersonName` 어노테이션의 이름 정보에 나이와 혼인 여부 필드를 추가하여 지정하였다.
+### 값 설정 - 배열 
+```
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LocsAvail {
+    String[] visit();
+    String[] delivery();
+    String[] quick();
+}
+```
+```
+public class Main {
+    @LocsAvail(
+            quick = {"서울", "대전", "강원"}, // {} 안에 작성
+            visit = "판교",                  // 하나만 있을 시 {} 생략 가능
+            delivery = {}                    // 요소가 없을 시 {} 필요
+    )
+    private Object store;
+}  
+```
+### 어노테이션을 활용한 검증 시스템
+```
+@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Blind { }
+
+@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface MaxLength {
+    int value() default 10;
+}
+
+@Target(ElementType.FIELD)
+@Repeatable(NumLimits.class)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface NumLimit {
+    LimitType type();
+    int to();
+}
+```
+```
+public class Introduction {
+    @Blind
+    @MaxLength(4)
+    private String name;
+
+    @NumLimit(type = LimitType.MIN, to = 1)
+    private int age;
+
+    @MaxLength
+    private String job;
+
+    @MaxLength(50)
+    private String description;
+
+    public Introduction(String name, int age, String job, String description) {
+        this.name = name;
+        this.age = age;
+        this.job = job;
+        this.description = description;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) throws IllegalAccessException {
+        List<Object> objList = new ArrayList<>();
+        // 객체 생성
+        Object[] objsToVerify = {
+                new Introduction(
+                        "홍길동", 28, "프로그래머",
+                        "외길인생 자바 프로그래머입니다.")};
+
+        var obj = objsToVerify[0];
+        Class<?> objClass = obj.getClass();   // objClass: "class sec13.chap03.ex02.Introduction"
+
+        for (var f : objClass.getDeclaredFields()) {.
+            // f: "private java.lang.String sec13.chap03.ex02.Introduction.name"
+            // f: "private int sec13.chap03.ex02.Introduction.28"
+            // f: "private java.lang.String sec13.chap03.ex02.Introduction.job"
+            // f: "private java.lang.String sec13.chap03.ex02.Introduction.description"
+
+            f.setAccessible(true);
+
+            Object val = f.get(obj);
+
+            // 필드의 어노테이션 검증 및 처리
+            for (var a : f.getAnnotations()) {
+                if (a instanceof Blind) {
+                    var s = (String) val;
+                    f.set(obj, s.substring(0, 1) + "*".repeat(s.length() - 1));
+                    // f: name = "홍**"
+                }
+
+                //  최대 길이 검증
+                 if (a instanceof MaxLength) {
+                    int maxLen = ((MaxLength) a).value();
+                    // name의 경우 -> maxLen: 4
+                    if (((String) val).length() > maxLen) {
+                        System.out.println("%s 최대 길이(%d) 초과".formatted(f.getName(), maxLen));
+                    }
+                }
+
+                if (a instanceof NumLimit) {
+                    try {
+                        verifyNumLimit(f.getName(), (NumLimit) a, (int) val);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
+}
+```
+#### 객체 생성 및 검증
+```
+new Introduction("홍길동", 28, "프로그래머","외길인생 자바 프로그래머입니다.")};
+```
+으로 `Introduction` 클래스를 사용하여 객체를 생성한다.
+
+이때 `Introduction` 클래스는 인자를 어노테이션을 사용하여 초기화하고 생성자를 지정하였다. 이후 검증 과정이 진행된다.
+
+`getClass` 메소드를 통해 해당 클래스 객체를 얻고, `getDeclaredFields` 메소드를 통해 객체의 필드 name, age, job, description을 순회한다.
+
+`getAnnotations` 메소드를 통해 해당 필드의 어노테이션을 확인하며 검증이 시작된다.
+#### name
+name 필드의 경우 `Blind`, `MaxLength(4)`를 어노테이션으로 지정되어 있다.
+
+`Blind` 어노테이션의 경우 메소드가 없으므로 if 문 내의 코드를 실행한다.
+
+`MaxLength(4)` 어노테이션의 경우 기본값이 10이지만, `Introduction` 클래스에서 값을 4로 지정하였기 때문에 `maxLen`의 값은 4이다.
+
+이후 if 문이 문제없이 진행된다.
+#### age
+age 필드의 경우 `NumLimit`이 어노테이션으로 지정되어 있다.
+
+`type`은 MIN 값이고(MIN은 열거형 값 중 하나), `to`에 1의 값이 전달된 채로 if 문 코드를 실행한다.
+#### job
+job 필드의 경우 `MaxLength`가 어노테이션으로 지정되어 있다.
+
+값을 지정하지 않았으므로 `maxLen`의 값은 기본값인 10이므로 어떤 일도 일어나지 않는다.
+#### description
+job 필드의 경우 `MaxLength`가 어노테이션으로 지정되어 있다.
+
+`MaxLength(50)` 어노테이션은 값이 50로 지정하였기 때문에 `maxLen`의 값은 50이다.
+
+이후 if 문이 문제없이 진행된다.
+# ClassLoader
+```
+ClassLoader loader1 = Main.class.getClassLoader();
+ClassLoader loader2 = Thread.currentThread().getContextClassLoader();
+ClassLoader loader3 = ClassLoader.getSystemClassLoader();
+// (loader1 == loader2 == loader3): true
+
+Class<?> noUseCls1 = NoUse.class;
+Class<?> noUseCls2 = Class.forName("sec13.chap04.ex02.NoUse");
+Class<?> noUseCls3 = loader1.loadClass("sec13.chap04.ex02.NoUse");
+// (noUseCls1 == noUseCls2 == noUseCls3): true
+```
+ClassLoader 클래스는 동적 클래스 로딩 및 클래스 로딩 관련 커스터마이징에 사용된다.
+
+위의 3줄은 클래스 로더를 사용하여 동일한 객체를 가져오고,
+
+아래의 3줄은 클래스 로더를 사용하여 동일한 클래스를 가져온다.
+## 클래스로더를 사용한 어노테이션
+```
+public class Main {
+    public static void main(String[] args) {
+        String packageName = Main.class.getPackageName(); // packageName: "sec13.chap04.ex03"
+        // 현재 클래스의 패키지 위치를 알려줌
+
+        List<Class<?>> classes = getClasses(packageName); // classes: size = 9
+        // classes에는 메인 클래스에 있는 모든 클래스가 담겨있음
+
+        List<Object> characters = classes.stream()
+                                         .filter(c -> c.isAnnotationPresent(Character.class))
+                                         .map(c -> { ... } )
+
+    }
+
+    public static List<Class<?>> getClasses(String packageName) {
+        List<Class<?>> classes = new ArrayList<>();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
+        //  패키지 이름을 경로 형식으로 변환
+        String path = packageName.replace('.', '/');
+
+        //  ClassLoader의 기능으로 경로에 해당하는 URL을 가져옴
+        java.net.URL resource = classLoader.getResource(path);
+
+        String filePath = resource.getFile();
+
+        filePath = java.net.URLDecoder.decode(filePath, StandardCharsets.UTF_8);
+
+        java.io.File file = new java.io.File(filePath);
+        if (file.isDirectory()) {
+            for (String fileName : file.list()) {
+                if (fileName.endsWith(".class")) {
+
+                    // 끝의 .class을 잘라내어 클래스명을 가져옴
+                    String className = packageName
+                            + '.' + fileName
+                            .substring(0, fileName.length() - 6);
+
+                    // 클래스명으로 Class 객체 가져옴
+                    Class<?> cls = null;
+                    try {
+                        cls = Class.forName(className);
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                    classes.add(cls);
+                }
+            }
+        } 
+        return classes;
+    }
+}
+```
+클래스로더를 사용하는 `getClasses` 메소드를 통해 해당 디렉토리의 모든 클래스를 배열에 담을 수 있다.
+
+클래스 배열을 스트림으로 바꾸고 윗 단계처럼 순회하며 어노테이션을 확인하며 검증 작업을 진행할 수 있다.
