@@ -209,3 +209,106 @@ Airflow는 `@dag` 데코레이터로 정의한 함수를 단순히 선언만 해
 - Depends On Past - 작업이 이전 실행에서 자신에게 의존. 이전 실행에서의 작업 결과에 따라 현재 실행에서의 작업 동작이 변경
 
 ## Branching
+의존성있는 모든 DAG를 실행하지 않고, 특정 DAG만 실행하고자 하는 경우에 사용한다. `@task.branch` 데코레이터로 사용할 수 있다.
+
+`@task.branch`는 작업 ID(혹은 ID 목록)을 반환한다는 점을 제외하면 `@task`와 거의 유사하다. 특정 경로를 지나가면 나머지 경로는 생략된다.
+downstream task를 생략하기 위해 `None`을 반환하기도 한다.
+
+`@task.branch` 데코레이터로 데코레이트된 함수에서 반환된 작업 ID는 반드시 해당 함수가 데코레이트된 작업 이후에 직접적으로 위치한 작업을 가리켜야 한다.
+```
+@dag
+def my_dag():
+    @task
+    def start():
+        ...
+
+    @task.branch
+    def decide():
+        # This function should return the task_id of a task downstream from "decide"
+        # 이 함수는 "decide" 작업 이후에 위치한 작업의 task_id를 반환해야 합니다.
+        if some_condition:
+            return "some_task"
+        else:
+            return "another_task"
+
+    @task
+    def some_task():
+        ...
+
+    @task
+    def another_task():
+        ...
+
+    start >> decide
+    decide >> [some_task, another_task]
+```
+위의 경우 `decide` 함수가 `some_task` 또는 `another_task` 중 하나의 작업 ID를 직접 가리키고 있다.
+### branch는 항상 task를 skip하는가?
+```
+                --------> branch_a --------
+                |                         |
+start -----> branch ---------------------------> join
+                |
+                --------> branch_b
+```
+branch_b로 분기하는 경우 일반적인 경우와 같이 다른 task는 skip한다.
+
+하지만 join으로 분기하는 경우 join이 branch_a의 downstream task이기도 하므로 branch_a task를 skip하지 않고 동작시킨다.
+### `@task.branch`, XComs
+`@task.branch`가 XComs(교환 통신)와 함께 사용될 수 있으며, 이를 통해 상위 작업에서 생성된 컨텍스트를 활용하여 동적으로 분기를 결정하고 어떤 분기를 따를지 결정할 수 있다.
+
+XComs는 작업 간에 데이터를 교환하는 데 사용되며, `@task.branch`를 사용하여 작업 간에 XComs를 전달하여 상위 작업의 결과를 기반으로 동적으로 DAG의 흐름을 제어할 수 있다.
+```
+@task.branch(task_id="branch_task")
+def branch_func(ti=None):
+    xcom_value = int(ti.xcom_pull(task_ids="start_task"))
+    if xcom_value >= 5:
+        return "continue_task"
+    elif xcom_value >= 3:
+        return "stop_task"
+    else:
+        return None
+
+
+start_op = BashOperator(
+    task_id="start_task",
+    bash_command="echo 5",
+    xcom_push=True,
+    dag=dag,
+)
+
+branch_op = branch_func()
+
+continue_op = EmptyOperator(task_id="continue_task", dag=dag)
+stop_op = EmptyOperator(task_id="stop_task", dag=dag)
+
+start_op >> branch_op >> [continue_op, stop_op]
+```
+`BashOperator`를 사용하여 bash_command를 통해 쉘 명령어를 실행하고, 실행 결과를 XCom으로 Push하도록 설정되어 있다.
+
+Push한 XCom 값을 기반으로 `branch_func` 작업이 실행되며, 그 결과에 따라 `continue_task` 또는 `stop_task` 작업 중 하나가 동적으로 실행된다.
+### BaseBranchOperator
+사용자 정의 Operators에 분기 기능을 구현하고자 할 때, `BaseBranchOperator`를 상속할 수 있다.
+
+`BaseBranchOperator`는 `@task.branch` 데코레이터와 유사한 동작을 가지지만, `choose_branch` 메서드의 구현을 제공해야 한다.
+
+`@task.branch` 데코레이터를 사용하는 것이 `BranchPythonOperator`를 직접 인스턴스화하는 것보다 권장된다. 일반적으로 `BranchPythonOperator`를 직접 사용하는 것은 사용자 정의 Operator를 구현할 때만 권장된다.
+
+`BaseBranchOperator`는 `@task.branch` 데코레이터의 callable과 유사하게 동작하며, downstream task의 ID나 ID 목록을 반환한다. downstream task를 skip 하기 위해서는 `None`을 반환하기도 한다.
+```
+class MyBranchOperator(BaseBranchOperator):
+    def choose_branch(self, context):
+        """
+        Run an extra branch on the first day of the month
+        """
+        if context['data_interval_start'].day == 1:
+            return ['daily_task_id', 'monthly_task_id']
+        elif context['data_interval_start'].day == 2:
+            return 'daily_task_id'
+        else:
+            return None
+```
+월의 첫날인 경우 `daily_task_id`와 `monthly_task_id` 두 개의 task를 실행하고, 2일인 경우 `daily_task_id` task를 실행한다.
+
+이외의 경우 `None`을 반환하여 모든 task를 skip한다.
+## Latest Only
