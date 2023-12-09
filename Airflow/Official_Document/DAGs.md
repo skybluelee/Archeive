@@ -88,7 +88,7 @@ my_function()
 
 DAG_FOLDER 내부 또는 그 하위 폴더에 `.airflowignore` 파일을 사용하여 로더가 무시하는 파일 패턴을 사용할 수 있다. 
 `.airflowignore` 사용시 해당 파일이 속한 디렉토리와 그 하위 모든 하위 폴더를 무시한다.
-자세한 내용은 아래의 .airflowignore를 참조.
+자세한 내용은 아래의 `.airflowignore`를 참조.
 
 `.airflowignore` 파일이 요구 사항을 충족시키지 못하고 Airflow가 파싱해야 할 Python 파일을 더 유연하게 제어하고 싶은 경우,
 config 파일에서 `might_contain_dag_callable`을 설정하여 callable을 사용할 수 있다.
@@ -142,6 +142,7 @@ DAG Run의 시작 및 종료 날짜 외에도 논리적 날짜(logical date) 또
 - `with DAG` 블록 내에서 Operator를 선언한 경우
 - `@dag` 데코레이터 내에서 Operator를 선언한 경우
 - DAG를 가진 Operator의 상위 또는 하위에 배치한 경우
+
 그렇지 않은 경우에는 `dag=` 매개변수를 사용하여 각 Operator에 DAG를 전달해야 한다.
 
 # Default Arguments
