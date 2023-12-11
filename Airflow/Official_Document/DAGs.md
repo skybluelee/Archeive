@@ -312,3 +312,36 @@ class MyBranchOperator(BaseBranchOperator):
 
 이외의 경우 `None`을 반환하여 모든 task를 skip한다.
 ## Latest Only
+Airflow의 DAG Run은 현재 날짜와 동일하지 않은 날짜에서 동작하기도 한다. 예를 들면 몇몇 데이터를 backfill하기 위해 지난달의 DAG 복사본을 동작하기도 한다.
+
+그럼에도 이전 날짜에 대한 DAG Run을 전부 실행하지 않는 것을 원하는 경우가 있는데, 이때 `LatestOnlyOperator`를 실행한다.
+
+이 특별한 Operator는 현재 "latest" DAG 실행이 아닌 경우 (현재 시간이 execution time과 다음 scheduled time 사이에 있고, 외부에서 트리거된 실행이 아닌 경우) 자체적으로 downstream task를 모두 skip 한다.
+
+```
+import datetime
+
+import pendulum
+
+from airflow import DAG
+from airflow.operators.empty import EmptyOperator
+from airflow.operators.latest_only import LatestOnlyOperator
+from airflow.utils.trigger_rule import TriggerRule
+
+with DAG(
+    dag_id="latest_only_with_trigger",
+    schedule=datetime.timedelta(hours=4),
+    start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
+    catchup=False,
+    tags=["example3"],
+) as dag:
+    latest_only = LatestOnlyOperator(task_id="latest_only")
+    task1 = EmptyOperator(task_id="task1")
+    task2 = EmptyOperator(task_id="task2")
+    task3 = EmptyOperator(task_id="task3")
+    task4 = EmptyOperator(task_id="task4", trigger_rule=TriggerRule.ALL_DONE)
+
+    latest_only >> task1 >> [task3, task4]
+    task2 >> [task3, task4]
+```
+<img src="https://github.com/skybluelee/Archeive/assets/107929903/8d8c7bda-0e0d-4ce8-b498-de9e80952888.png" width="1000" height="400"/>
