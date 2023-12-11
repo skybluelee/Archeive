@@ -345,3 +345,111 @@ with DAG(
     task2 >> [task3, task4]
 ```
 <img src="https://github.com/skybluelee/Archeive/assets/107929903/8d8c7bda-0e0d-4ce8-b498-de9e80952888.png" width="1000" height="400"/>
+
+- `task1`은 `latest_only`의 downstream이므로 최신(latest) 실행인 경우를 제외하면 전부 skip된다.
+- `task2`는 `latest_only`와 독립적이므로, 항상 실행된다.
+- `task3`는 `task1`과 `task2`의 downstream인데, _success_ 해야만 트리거되는 규칙에 의해 `task1`에서의 downstream에서는 연쇄적으로 skip(cascaded skip)된다.
+- `task4`는 `task1`과 `task2`의 downstream인데, trigger_rule이 `TriggerRule.ALL_DONE`으로 설정되어 있으므로, skip되지 않는다.
+
+## Depends On Past
+이전 DAG Run에서 성공적으로 완료된 경우에만 task를 실행되도록 설정할 수 있다. 이를 위해서는 해당 작업의 `depends_on_past` 매개변수를 True로 설정해야 한다.
+
+주의해야 할 점은 DAG가 처음으로 자동으로 실행될 때, 즉 첫 번째 실행 시점에서는 이전 실행이 없으므로 해당 작업은 항상 실행된다는 것이다.
+
+## Trigger Rules
+기본적으로 Airflow는 upstream task가 성공적으로 종료될 때까지 대기한다.
+
+하지만 이건 디폴트 값일 뿐, `trigger_rule` 인자를 task에 지정하여, 이를 제어할 수 있다. `trigger_rule` 목록은 아래와 같다.
+
+- `all_success` (기본값): 모든 상위 작업이 성공한 경우에만 실행.
+- `all_failed`: 모든 상위 작업이 실패하거나 upstream_failed 상태인 경우에 실행.
+- `all_done`: 모든 상위 작업이 실행을 완료한 경우에 실행.
+- `all_skipped`: 모든 상위 작업이 건너뛰어진 경우에 실행.
+- `one_failed`: 적어도 하나의 상위 작업이 실패한 경우에 실행 (다른 상위 작업이 완료되지 않아도 됨).
+- `one_success`: 적어도 하나의 상위 작업이 성공한 경우에 실행 (다른 상위 작업이 완료되지 않아도 됨).
+- `one_done`: 적어도 하나의 상위 작업이 성공하거나 실패한 경우에 실행.
+- `none_failed`: 모든 상위 작업이 실패하지 않았거나 upstream_failed 상태가 아닌 경우에 실행.
+- `none_failed_min_one_success`: 모든 상위 작업이 실패하지 않았거나 upstream_failed 상태가 아니며, 적어도 하나의 상위 작업이 성공한 경우에 실행.
+- `none_skipped`: 모든 상위 작업이 건너뛰어지지 않은 경우 (성공, 실패, 또는 upstream_failed 상태)에 실행.
+- `always`: 어떤 종속성도 없으며, 언제든 실행할 수 있음.
+
+원한다면 Trigger Rules와 Depends on Past 기능을 혼합하여 사용할 수 있다.
+
+### Trigger Rules와 분기 작업
+Trigger Rules와 skip된 task간의 상호작용, 특히 분기 작업(branching operation)에 의해 skip되는 경우에 대해 반드시 알아야 하는 점이 있다. 분기 작업에서는 `all_success`나 `all_failed`를 거의 사용하지 않을 것이다.
+
+skip된 task는 `all_success`나 `all_failed` trigger rule에 의해 연속적으로 skip하게 된다.
+```
+# dags/branch_without_trigger.py
+import pendulum
+
+from airflow.decorators import task
+from airflow.models import DAG
+from airflow.operators.empty import EmptyOperator
+
+dag = DAG(
+    dag_id="branch_without_trigger",
+    schedule="@once",
+    start_date=pendulum.datetime(2019, 2, 28, tz="UTC"),
+)
+
+run_this_first = EmptyOperator(task_id="run_this_first", dag=dag)
+
+
+@task.branch(task_id="branching")
+def do_branching():
+    return "branch_a"
+
+
+branching = do_branching()
+
+branch_a = EmptyOperator(task_id="branch_a", dag=dag)
+follow_branch_a = EmptyOperator(task_id="follow_branch_a", dag=dag)
+
+branch_false = EmptyOperator(task_id="branch_false", dag=dag)
+
+join = EmptyOperator(task_id="join", dag=dag)
+
+run_this_first >> branching
+branching >> branch_a >> follow_branch_a >> join
+branching >> branch_false >> join
+```
+<img src="https://github.com/skybluelee/Archeive/assets/107929903/a7d00ff3-fda8-469e-b255-1aa14b6fec4f.png" width="1000" height="200"/>
+
+`join`은 `follow_branch_a`와 `branch_false`의 downstream이다. `join` task는 `trigger_rule`이 기본값인 `all_success`으로 설정되어 있으므로
+분기 작업에 의해 발생한 fail에 의해 skip될 것이다.
+
+<img src="https://github.com/skybluelee/Archeive/assets/107929903/13428b5a-5615-46d1-bb73-4138bd1391de.png" width="1000" height="200"/>
+
+`join` task의 `trigger_rule`을 `none_failed_min_one_success`로 설정하여, 기존에 원하던 결과를 얻을 수 있다.
+
+# 설정 및 해제
+데이터 워크플로우에서 자원을 생성한 다음 일부 작업을 수행하고 나서 해당 자원을 제거하는 것이 일반적이며, Airflow에서는 이를 지원한다.
+
+해당 정보는 [Setup and Teardown](https://airflow.apache.org/docs/apache-airflow/stable/howto/setup-and-teardown.html)에서 확인할 수 있다.
+
+# Dynamic DAGs
+DAG는 파이썬 코드로 정의되기 때문에, 완전 선언식(declarative)일 필요는 없다. 루프, 함수를 비롯한 여러가지를 사용할 수 있다.
+```
+ with DAG("loop_example", ...):
+
+     first = EmptyOperator(task_id="first")
+     last = EmptyOperator(task_id="last")
+
+     options = ["branch_a", "branch_b", "branch_c", "branch_d"]
+     for option in options:
+         t = EmptyOperator(task_id=option)
+         first >> t >> last
+```
+일반적으로, DAG의 구조나 레이아웃을 상대적으로 일정하게 유지하는 것이 좋다. 동적인 DAG는 주로 구성 옵션을 동적으로 로딩하거나 연산자 옵션을 변경하는 데 사용되는 것이 더 나은 경우가 많다.
+
+# DAG 시각화
+DAG 시각화를 원한다면 2가지 선택지가 있다.
+- Airflow UI를 로드하고, DAG를 선택하고, "Graph"를 선택하기.
+- `airflow dags show`를 실행하고, 이미지 파일로 렌더링하기.
+
+Airflow에서는 일반적으로 Graph 사용을 추천하는데, 그래프가 사용자가 선택한 DAG Run 내의 모든 task 객체의 상태를 보여주기 때문이다.
+
+물론, DAG를 개발 할 수록 매우 복잡해지므로, DAG 시각화를 수정하여 더 쉽게 이해할 수 있도록하는 몇가지 방법을 제공한다.
+
+## TaskGroups
