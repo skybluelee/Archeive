@@ -36,3 +36,24 @@ DAG를 간단한 일정에 맞게 실행하려면 해당 DAG의 schedule 인수�
 |`@monthly`|Run once a month at midnight (24:00) of the first day of the month|0 0 1 * *|
 |`@quarterly`|Run once a quarter at midnight (24:00) on the first day|0 0 1 */3 *|
 |`@yearly`|Run once a year at midnight (24:00) of January 1|0 0 1 1 *|
+
+DAG는 각 일정에 대해 별도로 인스턴스화되며 해당 DAG의 실행에 대한 데이터베이스 백엔드에 해당하는 DAG Run 항목이 만들어진다.
+## 데이터 간격(Data Interval)
+Airflow에서 각 DAG 실행은 작동하는 시간 범위를 나타내는 "데이터 간격"이 할당된다.
+예를 들어 `@daily`로 예약된 DAG의 경우 각 데이터 간격은 일반적으로 매일 자정 (00:00)에 시작하여 자정 (24:00)에 끝난다.
+
+보통 DAG Run은 연관된 데이터 간격이 끝난 후 예약되며, 이를 통해 실행이 해당 기간 내의 모든 데이터를 수집할 수 있다.
+다시 말하면, 2020-01-01의 데이터 기간을 포함하는 실행은 일반적으로 2020-01-01이 종료된 후, 즉 2020-01-02 00:00:00 이후에 실행된다.
+
+Airflow의 모든 날짜는 어떤 방식으로든 데이터 간격 개념에 연결되어 있다. 
+DAG 실행의 "논리적인 날짜(logical date)" (Airflow 2.2 이전 버전에서는 `execution_date`로 불림)는 예를 들어 데이터 간격의 시작을 나타내며, DAG가 실제로 실행되는 시간이 아니다.
+
+마찬가지로 DAG와 해당 작업의 `start_date` 인자는 동일한 논리적인 날짜를 가리키므로 DAG의 첫 번째 데이터 간격의 시작을 나타낸다. 다시 말하면, DAG 실행은 start_date 후에 한 번만 예약된다.
+
+만약 cron 표현식이나 timedelta 객체로는 DAG의 일정, 논리적인 날짜, 또는 데이터 간격을 표현하기에 충분하지 않다면 [Timetables](https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/timetable.html)을 참조하라.
+논리적인 날짜에 대한 자세한 정보는 [Running DAGs](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dags.html#concepts-dag-run) 및 [What does execution_date mean?](https://airflow.apache.org/docs/apache-airflow/stable/faq.html#faq-what-does-execution-date-mean)을 참조하라.
+
+# Re-run DAG
+DAG를 다시 실행할 필요가 있는 경우(예를 들어 예정된 DAG가 실패한 경우)가 있다.
+
+## Catchup
