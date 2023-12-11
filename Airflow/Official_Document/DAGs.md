@@ -453,3 +453,258 @@ Airflow에서는 일반적으로 Graph 사용을 추천하는데, 그래프가 �
 물론, DAG를 개발 할 수록 매우 복잡해지므로, DAG 시각화를 수정하여 더 쉽게 이해할 수 있도록하는 몇가지 방법을 제공한다.
 
 ## TaskGroups
+TaskGroup은 그래프 뷰에서 작업을 계층적 그룹으로 구성하는 데 사용될 수 있다. 이는 반복되는 패턴을 만들거나 시각적 혼란을 줄이는 데 유용하다.
+
+SubDAGs와 다르게, TaskGroups은 순전히 그룹화하는 개념이다. TaskGroups 내에 있는 작업들은 여전히 동일한 DAG에 속하며, 해당 DAG의 설정 및 풀 구성을 따른다.
+- 풀 구성(pool configurations): "풀(pool)"은 리소스 관리를 위한 개념이다. 풀은 일반적으로 동시에 실행 가능한 작업의 수를 제어하고, 특정 유형의 작업이나 리소스에 대한 공유 리소스를 관리하는 데 사용된다.
+- 풀 구성은 특정 작업이나 DAG에 할당된 자원을 조절하는 데 도움을 준다. 예를 들어 특정 작업 유형이나 리소스를 과도하게 사용하지 않도록 제한하는 데 사용될 수 있다.
+- 풀 구성에는 작업이 동시에 실행될 수 있는 최대 인스턴스 수, 각 작업이 할당받는 리소스의 양, 우선 순위 설정 등이 포함될 수 있다.
+- 풀은 Airflow 실행자(executor)의 특정 인스턴스에 따라 달라질 수 있다. 예를 들어, LocalExecutor와 CeleryExecutor는 각각 자체 풀 구성을 가질 수 있다.
+- 풀을 사용하면 작업 간의 리소스 경합을 방지하고 시스템의 안정성을 향상시킬 수 있다.
+
+```
+ from airflow.decorators import task_group
+
+
+ @task_group()
+ def group1():
+     task1 = EmptyOperator(task_id="task1")
+     task2 = EmptyOperator(task_id="task2")
+
+
+ task3 = EmptyOperator(task_id="task3")
+
+ group1() >> task3
+```
+의존성 관계는 TaskGroup 내의 모든 작업에 >> 및 << 연산자를 사용하여 적용할 수 있다.
+예를 들어, 위 코드는 task1과 task2를 TaskGroup group1에 넣은 다음, 이 두 작업을 모두 task3의 upstream으로 지정하였다.
+
+```
+import datetime
+
+from airflow import DAG
+from airflow.decorators import task_group
+from airflow.operators.bash import BashOperator
+from airflow.operators.empty import EmptyOperator
+
+with DAG(
+    dag_id="dag1",
+    start_date=datetime.datetime(2016, 1, 1),
+    schedule="@daily",
+    default_args={"retries": 1},
+):
+
+    @task_group(default_args={"retries": 3})
+    def group1():
+        """This docstring will become the tooltip for the TaskGroup."""
+        task1 = EmptyOperator(task_id="task1")
+        task2 = BashOperator(task_id="task2", bash_command="echo Hello World!", retries=2)
+        print(task1.retries)  # 3
+        print(task2.retries)  # 2
+```
+TaskGroupos은 `default_args`를 지원하며, DAG 수준의 `default_args`를 덮어쓸 수 있다.
+
+TaskGroups의 자세한 사용 예시는 Airflow에서 제공하는 `example_task_group_decorator.py`에서 확인할 수 있다.
+
+### group id
+기본적으로 자식 Task 또는 TaskGroup은 부모 TaskGroup의 group_id로 ID에 접두어가 붙는다. 이렇게 함으로써 DAG 전체에서 group_id와 task_id의 고유성을 보장할 수 있다.
+
+prefixing을 비활성화하려면 TaskGroup을 생성할 때 `prefix_group_id=False`로 설정하면 된다.
+그러나 이는 모든 작업과 그룹이 고유한 ID를 가지도록 보장하는 책임이 사용자에게 있게 된다. 이는 ID 충돌을 피하기 위해 주의해야 함을 의미한다.
+### @task_group
+`@task_group` 데코레이터를 사용할 때, 데코레이트된 함수의 독스트링(docstring)이 TaskGroup의 UI에서 툴팁으로 사용된다. 
+단, 툴팁 값이 명시적으로 제공되지 않은 경우에만 해당 독스트링이 사용된다.
+
+독스트링(docstring)
+- 파이썬 코드 내의 주석 형태의 문자열로, 주로 모듈, 함수, 클래스 등에 대한 문서화에 사용된다.
+- 파이썬의 help() 함수나 다른 도구에서 이 문자열을 통해 해당 객체에 대한 설명과 사용 방법을 제공할 수 있다.
+
+```
+def add_numbers(a, b):
+    """
+    This function adds two numbers.
+
+    Parameters:
+    - a (int): The first number.
+    - b (int): The second number.
+
+    Returns:
+    int: The sum of a and b.
+    """
+    return a + b
+```
+`""" ~ """` 사이의 문자열이 독스트링이다.
+## Edge Labels
+작업을 그룹화하는 것 외에도 그래프 뷰에서 다른 작업 간의 종속성 엣지(Edge)에 레이블을 지정할 수 있다.
+이는 DAG의 분기 부분과 같은 경우에 특히 유용하다. 이렇게 하면 특정 분기가 실행될 조건을 레이블로 표시할 수 있다.
+
+```
+from airflow.utils.edgemodifier import Label
+
+my_task >> Label("When empty") >> other_task
+```
+레이블을 추가하려면 >> 및 << 연산자와 함께 직접 사용할 수 있다.
+***
+```
+from airflow.utils.edgemodifier import Label
+
+my_task.set_downstream(other_task, Label("When empty"))
+```
+또는 `set_upstream` 및 `set_downstream`에 Label 객체를 전달할 수 있다.
+***
+```
+
+with DAG(
+    "example_branch_labels",
+    schedule="@daily",
+    start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
+    catchup=False,
+) as dag:
+    ingest = EmptyOperator(task_id="ingest")
+    analyse = EmptyOperator(task_id="analyze")
+    check = EmptyOperator(task_id="check_integrity")
+    describe = EmptyOperator(task_id="describe_integrity")
+    error = EmptyOperator(task_id="email_error")
+    save = EmptyOperator(task_id="save")
+    report = EmptyOperator(task_id="report")
+
+    ingest >> analyse >> check
+    check >> Label("No errors") >> save >> report
+    check >> Label("Errors found") >> describe >> error >> report
+```
+<img src="https://github.com/skybluelee/Archeive/assets/107929903/44f00ead-e568-4077-8ecf-ceeac1fae946.png" width="1000" height="200"/>
+
+# DAG, task 문서화
+DAG 및 작업 객체에 웹 인터페이스에서 볼 수 있는 문서 또는 주석을 추가하는 것이 가능하다. DAG에 대해서는 "Graph" 및 "Tree" 탭에서, 작업에 대해서는 "Task Instance Details"에서 확인할 수 있다.
+
+특별한 작업 속성 집합이 정의되면 해당 속성들은 풍부한 콘텐츠로 렌더링된다.
+
+|-----|-----|
+|attribute|redered to|
+|doc|monospace|
+|doc_json|json|
+|doc_yaml|yaml|
+|doc_md|markdown|
+|doc_rst|reStructuredText|
+
+DAG에 대해선 doc_md가 유일하게 해석되는 속성이다. 이 속성은 문자열이나 템플릿 파일에 대한 참조를 포함할 수 있다. 템플릿 참조는 `.md`로 끝나는 문자열로 인식되며, 상대 경로가 제공된 경우 DAG 파일의 폴더에서 시작된다.
+또한 템플릿 파일은 반드시 존재해야 하며, 그렇지 않을 경우 Airflow은 `jinja2.exceptions.TemplateNotFound` 예외를 발생시킨다.
+```
+"""
+### My great DAG
+"""
+import pendulum
+
+dag = DAG(
+    "my_dag",
+    start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
+    schedule="@daily",
+    catchup=False,
+)
+dag.doc_md = __doc__
+
+t = BashOperator("foo", dag=dag)
+t.doc_md = """\
+#Title"
+Here's a [url](www.airbnb.com)
+"""
+```
+이러한 설정은 특히 작업이 동적으로 구성 파일에서 생성되는 경우에 유용하다. 이를 통해 Airflow에서 관련 작업으로 이어지는 구성을 노출시킬 수 있다.
+# SubDAGs
+**SubDAG는 더 이상 권장사항이 아니며 TaskGroup을 주로 사용된다.**
+
+때때로, 사용자는 모든 DAG에 정확이 동일한 task를 주기적으로 추가하거나, 많은 양의 task를 하나의, 논리 단위로 그룹화하고 싶은 경우가 있다. SubDAG는 이럴 때 사용한다.
+
+SubDAG 연산자를 사용할 때는 해당 연산자에 DAG 객체를 반환하는 팩토리 메서드를 포함해야 한다. 
+이렇게 하면 SubDAG가 주요 UI에서 별도의 DAG로 처리되는 것을 방지할 수 있다. 
+Airflow는 Python 파일의 최상위에서 DAG를 감지하면 이를 자체 DAG로 로드한다는 것을 기억하라.
+
+```
+import pendulum
+
+from airflow import DAG
+from airflow.operators.empty import EmptyOperator
+
+
+def subdag(parent_dag_name, child_dag_name, args) -> DAG:
+    """
+    Generate a DAG to be used as a subdag.
+
+    :param str parent_dag_name: Id of the parent DAG
+    :param str child_dag_name: Id of the child DAG
+    :param dict args: Default arguments to provide to the subdag
+    :return: DAG to use as a subdag
+    """
+    dag_subdag = DAG(
+        dag_id=f"{parent_dag_name}.{child_dag_name}",
+        default_args=args,
+        start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
+        catchup=False,
+        schedule="@daily",
+    )
+
+    for i in range(5):
+        EmptyOperator(
+            task_id=f"{child_dag_name}-task-{i + 1}",
+            default_args=args,
+            dag=dag_subdag,
+        )
+
+    return dag_subdag
+```
+위의 SubDAG는 메인 DAG 파일 내에서 참조될 수 있다.
+```
+***
+```
+import datetime
+
+from airflow import DAG
+from airflow.example_dags.subdags.subdag import subdag
+from airflow.operators.empty import EmptyOperator
+from airflow.operators.subdag import SubDagOperator
+
+DAG_NAME = "example_subdag_operator"
+
+with DAG(
+    dag_id=DAG_NAME,
+    default_args={"retries": 2},
+    start_date=datetime.datetime(2022, 1, 1),
+    schedule="@once",
+    tags=["example"],
+) as dag:
+
+    start = EmptyOperator(
+        task_id="start",
+    )
+
+    section_1 = SubDagOperator(
+        task_id="section-1",
+        subdag=subdag(DAG_NAME, "section-1", dag.default_args),
+    )
+
+    some_other_task = EmptyOperator(
+        task_id="some-other-task",
+    )
+
+    section_2 = SubDagOperator(
+        task_id="section-2",
+        subdag=subdag(DAG_NAME, "section-2", dag.default_args),
+    )
+
+    end = EmptyOperator(
+        task_id="end",
+    )
+
+    start >> section_1 >> some_other_task >> section_2 >> end
+```
+`SubDagOperator`는 병렬성(Parallelism)이 존중되지 않기 때문에 설정한 제한을 초과하여 자원이 소비될 수 있다.
+## SubDAG 사용 팁
+- 관례적으로 SubDAG의 `dag_id`는 부모 DAG의 이름과 점(.)으로 구분된 형식(`parent.child`)으로 되어야 한다. 
+- 주요 DAG와 SubDAG 간에 인자를 공유하려면 인자를 SubDAG 연산자에 전달하여야 한다 (위에서 설명한 대로).
+- SubDAG는 일정과 활성화 설정이 필요하다. SubDAG의 일정이 `None`이거나 `@once`로 설정된 경우 SubDAG는 아무 작업도 수행하지 않고 성공으로 간주된다.
+- `SubDagOperator`를 클리어(clear)하면 내부 작업의 상태도 함께 초기화된다.
+- `SubDagOperator`에 대한 성공 표시는 그 내부 작업의 상태에 영향을 미치지 않는다.
+- SubDAG 내의 작업에서 `Depends On Past`를 사용하는 것은 혼란스러울 수 있으므로 피하는 것이 좋다.
+- SubDAG에 대한 executor를 지정할 수 있다. SubDAG를 프로세스 내에서 실행하고 병렬성을 효과적으로 1로 제한하려면 `SequentialExecutor`를 사용하는 것이 일반적이다. LocalExecutor를 사용하는 것은 문제가 될 수 있으며, 이로 인해 워커가 오버 서브스크라이브되어 단일 슬롯에서 여러 작업이 실행될 수 있다.
+
+# TaskGroups vs SubDAGs
