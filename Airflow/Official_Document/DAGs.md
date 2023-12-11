@@ -579,8 +579,8 @@ DAG 및 작업 객체에 웹 인터페이스에서 볼 수 있는 문서 또는 
 
 특별한 작업 속성 집합이 정의되면 해당 속성들은 풍부한 콘텐츠로 렌더링된다.
 
-|-----|-----|
 |attribute|redered to|
+|-----|-----|
 |doc|monospace|
 |doc_json|json|
 |doc_yaml|yaml|
@@ -708,3 +708,17 @@ with DAG(
 - SubDAG에 대한 executor를 지정할 수 있다. SubDAG를 프로세스 내에서 실행하고 병렬성을 효과적으로 1로 제한하려면 `SequentialExecutor`를 사용하는 것이 일반적이다. LocalExecutor를 사용하는 것은 문제가 될 수 있으며, 이로 인해 워커가 오버 서브스크라이브되어 단일 슬롯에서 여러 작업이 실행될 수 있다.
 
 # TaskGroups vs SubDAGs
+SubDAGs는 TaskGroups과 유사한 목적을 제공하지만, 구현상의 이유로 인해 성능 및 기능적인 문제를 도입하였다.
+
+- SubDagOperator는 BackfillJob을 시작하며, 기존의 병렬성 구성을 무시하고 워커 환경을 과도하게 할당할 수 있다.
+- SubDAGs는 자체 DAG 속성을 가지고 있습니다. SubDAG의 DAG 속성이 부모 DAG와 일관성이 없는 경우 예상치 못한 동작이 발생할 수 있다.
+- SubDAG는 완전한 DAG로 존재하기 때문에 한 눈에 전체 DAG를 볼 수 없다.
+- SubDAGs는 여러 가지 예외 상황과 주의사항을 도입하였다. 이는 사용자 경험과 기대치를 방해할 수 있다.
+
+한편으로, TaskGroups은 순전히 UI에서 사용되는 그룹화 개념이므로 더 나은 옵션이다. 
+TaskGroup 내의 모든 작업은 여전히 TaskGroup 외의 다른 작업들과 마찬가지로 동작한다.
+
+두 구조체 간의 핵심 차이점은 아래와 같다.
+
+|TaskGroup|SubDAG|
+|----------|----------|
