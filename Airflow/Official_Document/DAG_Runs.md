@@ -182,4 +182,4 @@ CLI나 API 또는 UI를 통해 트리거하는 동안 JSON 블롭으로 DAG Run�
 airflow dags trigger --conf '{"conf1": "value1"}' example_parameterized_dag
 ```
 ### UI 사용
-<img src="https://github.com/skybluelee/Archeive/assets/107929903/9a80f165-d4b3-4fde-acc0-a26ed0936733.png" width="1000" height="400"/>
+<img src="https://github.com/skybluelee/Archeive/assets/107929903/9a80f165-d4b3-4fde-acc0-a26ed0936733.png" width="9000" height="500"/>
