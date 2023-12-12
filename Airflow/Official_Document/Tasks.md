@@ -87,8 +87,17 @@ DAG가 실행중일 때, 해당 DAG에 대한 각 task의 upstream, downstream�
 이는 sensor가 `reschedule` 모드에 있을 때만 중요하다.
 `timeout`은 센서가 성공하기까지 허용되는 최대 시간을 제어한다. 
 `timeout`이 초과되면 `AirflowSensorTimeout`이 발생하고 sensor는 재시도 없이 즉시 실패한다.
-
-아래의 `SFTPSensor` 예시는 이를 설명한다.
+```
+sensor = SFTPSensor(
+    task_id="sensor",
+    path="/root/test",
+    execution_timeout=timedelta(seconds=60),
+    timeout=3600,
+    retries=2,
+    mode="reschedule",
+)
+```
+위의 `SFTPSensor` 예시는 이를 설명한다.
 `sensor`는 `reschedule` 모드이며, 이는 성공할 때까지 주기적으로 실행되고 reschedule 되는 것을 의미한다.
 - 센서가 SFTP 서버를 확인할 때마다 실행 시간은 `execution_timeout`에 정의된 대로 최대 60초까지 허용된다.
 - 만약 센서가 SFTP 서버를 확인하는 데 60초보다 더 오래 걸린다면 `AirflowTaskTimeout`이 발생하며 이때 센서는 재시도할 수 있다. 이때 재시도 횟수는 `retries`에 정의된 대로 최대 2회까지 가능하다.
@@ -96,4 +105,94 @@ DAG가 실행중일 때, 해당 DAG에 대한 각 task의 upstream, downstream�
 다시 말해, 파일이 3600초 이내에 SFTP 서버에 나타나지 않으면 센서는 `AirflowSensorTimeout`을 발생시며, 이 오류가 발생하더라도 재시도하지 않는다.
 - 센서가 3600초 간격 동안 네트워크 장애와 같은 다른 이유로 실패하면 `retries`에 정의된 대로 최대 2회까지 재시도할 수 있다. 재시도는 `timeout`을 재설정하지 않으며, 성공할 때까지 최대 3600초의 시간이 주어진다.
 
-ㅇㅇ
+만약 작업이 지연되지만 완료될 수 있도록 허용하고, 단지 알림을 받고 싶다면 SLA(Service Level Agreement)를 사용하라.
+# SLAs
+SLA 또는 서비스 수준 협약(Service Level Agreement)은 task가 DAG 실행 시작 시간과 관련하여 완료되어야 하는 최대 예상 시간이다.
+task가 이 시간보다 더 오랜 시간이 걸리면 사용자 인터페이스의 "SLA Misses" 부분에서 확인할 수 있으며, SLA를 놓친 모든 작업에 대한 이메일로도 전송된다.
+
+SLA를 초과하는 작업은 취소되지 않는다. 대신에, 그들은 완료까지 실행될 수 있다.
+특정 런타임이 지난 후 작업을 취소하려면 대신 Timeouts(타임아웃)를 사용해야 한다.
+
+task에 SLA를 설정하려면 Task/Operator의 `sla` 파라미터에 `datetime.timedelta` 객체를 전달해야 한다.
+또한 자체 로직을 실행하려면 SLA를 놓친 경우 호출되는 `sla_miss_callback`을 제공할 수 있다.
+
+만약 SLA 확인을 완전히 비활성화하고 싶다면, Airflow의 `[core]` 구성에서 `check_slas = False`로 설정하면 된다.
+
+이메일 구성에 대한 더 많은 정보는 [Email Configuration](https://airflow.apache.org/docs/apache-airflow/stable/howto/email-config.html)에서 확인할 수 있다.
+
+수동으로 트리거된 task 및 이벤트 기반 DAG의 작업은 SLA 미스를 확인하지 않는다. DAG 스케줄 값에 대한 자세한 정보는 DAG Run을 참조하라.
+
+## sla_miss_callback
+`sla_miss_callback`를 제공하면 SLA가 누락된 경우 자체 로직을 실행할 수 있다. `sla_miss_callback`의 함수 시그니처는 5개의 매개변수를 필요로 한다.
+
+1. `dag`: task가 SLA를 놓친 DAG Run의 부모 DAG 객체이다.
+2. `task_list`: 지난 `sla_miss_callback`이 실행된 이후에 SLA를 놓친 모든 작업의 문자열 목록(줄 바꿈으로 구분된 \n)이다.
+3. `blocking_task_list`: SLA를 놓친 작업이 있는 DAGRun (놓친 SLA가 있는 작업과 동일한 execution_date를 가진 작업) 중 `sla_miss_callback`이 실행될 때 SUCCESS 상태가 아닌 모든 작업 즉, 'running', 'failed' 상태인 작업이다.
+이러한 작업은 자체 또는 다른 작업이 SLA 창이 완료되기 전에 완료되는 것을 방해하는 작업으로 설명된다.
+4. `slas`: task_list 파라미터에 연결된 작업과 관련된 **SlaMiss** 객체의 목록이다.
+5. `blocking_tis`: `blocking_task_list` 매개변수에 연결된 작업과 관련된 task 객체의 목록이다.
+```
+def sla_callback(dag, task_list, blocking_task_list, slas, blocking_tis):
+    print(
+        "The callback arguments are: ",
+        {
+            "dag": dag,
+            "task_list": task_list,
+            "blocking_task_list": blocking_task_list,
+            "slas": slas,
+            "blocking_tis": blocking_tis,
+        },
+    )
+
+
+@dag(
+    schedule="*/2 * * * *",
+    start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
+    catchup=False,
+    sla_miss_callback=sla_callback,
+    default_args={"email": "email@example.com"},
+)
+def example_sla_dag():
+    @task(sla=datetime.timedelta(seconds=10))
+    def sleep_20():
+        """Sleep for 20 seconds"""
+        time.sleep(20)
+
+    @task
+    def sleep_30():
+        """Sleep for 30 seconds"""
+        time.sleep(30)
+
+    sleep_20() >> sleep_30()
+
+
+example_dag = example_sla_dag()
+```
+# 특이 예외 사항
+커스텀 Task/Operator 코드 내에서 작업의 상태를 제어하고 싶다면, Airflow는 두 가지 특수한 예외를 제공한다.
+
+1. `AirflowSkipException`: 현재 작업을 건너뛴 것으로 표시한다.
+2. `AirflowFailException`: 남은 재시도 시도를 무시하고 현재 작업을 실패로 표시한다.
+
+이러한 예외는 코드가 환경에 대해 추가적인 정보를 가지고 있고 더 빨리 실패/건너뛰고 싶을 때 유용할 수 있다. 
+예를 들어 데이터가 없을 때 건너뛰거나, API 키가 유효하지 않은 경우 빠르게 실패하려고 할 때 사용될 수 있다(재시도로는 해결되지 않는 문제).
+
+# Zombie/Undead Task
+어떤 시스템도 완벽하게 실행되지 않으며, task 객체는 가끔씩 종료되기도 한다. Airflow는 두 가지 종류의 작업/프로세스 불일치를 감지한다.
+- Zombie tasks(좀비 작업): 실행 중이어야 하는 작업이 갑자기 종료된 경우(예: 프로세스가 종료되거나 머신이 다운된 경우)이다. Airflow는 주기적으로 이를 감지하고 정리하며, 작업의 설정에 따라 작업을 실패 또는 재시도한다.
+- Undead tasks(언데드 작업): 실행 중이어서는 안 되는 작업이 실행 중인 경우, 주로 UI를 통해 작업 인스턴스를 수동으로 편집할 때 발생한다. Airflow는 주기적으로 이를 감지하고 종료한다.
+
+# Executor 구성
+일부 Executors는 선택적으로 각 작업에 대한 구성을 허용한다. 예를 들어 `KubernetesExecutor`는 작업을 실행할 이미지를 설정할 수 있게 해준다.
+
+이는 task 또는 operator에 대한 `executor_config` 인자를 통해 달성된다. `KubernetesExecutor`에서 작업에 Docker 이미지를 설정하는 예제는 아래와 같다.
+```
+MyOperator(...,
+    executor_config={
+        "KubernetesExecutor":
+            {"image": "myCustomDockerImage"}
+    }
+)
+```
+
+`executor_config`에 전달할 수 있는 설정은 Executor에 따라 다르므로 설정할 수 있는 내용을 확인하려면 [개별 Executor 문서](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/executor/index.html)를 참조하라
