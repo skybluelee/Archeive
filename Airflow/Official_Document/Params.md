@@ -153,7 +153,7 @@ DAG에 정의된 Params가 없으면 트리거 폼이 스킵된다.
 |
 ***
 예제 DAG인 `example_params_trigger_ui`와 `example_params_ui_tutorial`도 확인하는 것이 좋다.
-<img src="https://github.com/skybluelee/Archeive/assets/107929903/6f5c96fd-abb4-43fd-8a41-a5879d0a090e.png" width="1200" height="1800"/>
+<img src="https://github.com/skybluelee/Archeive/assets/107929903/6f5c96fd-abb4-43fd-8a41-a5879d0a090e.png" width="1200" height="1500"/>
 
 2.7.0 버전에 추가됨.
 
