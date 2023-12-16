@@ -150,8 +150,7 @@ DAG에 정의된 Params가 없으면 트리거 폼이 스킵된다.
 
 |Param type|Form element type|Additional supported attributes|Example|
 |-|-|-|-|
-|`string|텍스트를 수정하기 위해 한 줄의 텍스트 박스를 생성한다.|- `minLength(최소 길이):` 텍스트의 최소 길이 <br>
-- **maxLength(최대 길이):** 텍스트의 최대 길이 <br>
+|`string|텍스트를 수정하기 위해 한 줄의 텍스트 박스를 생성한다.|- `minLength(최소 길이):` 텍스트의 최소 길이 <br>- **maxLength(최대 길이):** 텍스트의 최대 길이 <br>
 - **format="date"(형식="date"):** 달력 팝업이 있는 날짜 선택기 생성 <br>
 - **format="datetime"(형식="datetime"):** 달력 팝업이 있는 날짜 및 시간 선택기 생성 <br>
 - **format="time"(형식="time"):** 시간 선택기 생성 <br>
