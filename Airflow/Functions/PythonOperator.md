@@ -27,6 +27,60 @@ def my_python_callable(**kwargs):
 - show_return_value_in_logs (bool) – 반환 값 로그를 표시할지 여부를 나타내는 boolean 값이다. 기본값은 True로, 반환 값 로그 출력을 허용한다.
 큰 데이터(예: 대량의 XCom을 TaskAPI에 전송하는 경우)를 반환할 때 로그 출력을 방지하려면 False로 설정하면 된다.
 
+## example
+```
+from airflow.models.dag import DAG
+from airflow.operators.python import (
+#   ExternalPythonOperator,
+    PythonOperator,
+#   PythonVirtualenvOperator,
+#   is_venv_installed,
+)
+
+with DAG(
+    dag_id="example_python_operator",
+    schedule=None,
+    start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
+    catchup=False,
+    tags=["example"],
+):
+    # 첫번째 파이썬 함수
+    def print_context(ds=None, **kwargs):
+        """Print the Airflow context and ds variable from the context."""
+        pprint(kwargs) # **kwargs는 이 임의의 키워드 인자를 받아들이는 dictionary로,
+                       # 만약 인자를 제공하지 않으면, kwargs 사전은 빈 사전(empty dictionary)으로 채워져 아무것도 출력되지 않음
+        print(ds)      # ds는 인자로 직접 받음
+        return "Whatever you return gets printed in the logs"
+
+    run_this = PythonOperator(task_id="print_the_context", python_callable=print_context)
+    # [END howto_operator_python]
+
+    # [START howto_operator_python_render_sql]
+    def log_sql(**kwargs):
+        logging.info("Python task decorator query: %s", str(kwargs["templates_dict"]["query"]))
+
+    log_the_sql = PythonOperator(
+        task_id="log_sql_query",
+        python_callable=log_sql,
+        templates_dict={"query": "sql/sample.sql"},
+        templates_exts=[".sql"],
+    )
+    # [END howto_operator_python_render_sql]
+
+    # [START howto_operator_python_kwargs]
+    # Generate 5 sleeping tasks, sleeping from 0.0 to 0.4 seconds respectively
+    def my_sleeping_function(random_base):
+        """This is a function that will run within the DAG execution"""
+        time.sleep(random_base)
+
+    for i in range(5):
+        sleeping_task = PythonOperator(
+            task_id=f"sleep_for_{i}", python_callable=my_sleeping_function, op_kwargs={"random_base": i / 10}
+        )
+
+        run_this >> log_the_sql >> sleeping_task
+```
+
 # task
 `airflow.operators.python.task(python_callable=None, multiple_outputs=None, **kwargs)`
 
