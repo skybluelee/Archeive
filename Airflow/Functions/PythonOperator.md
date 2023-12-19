@@ -24,9 +24,9 @@ def my_python_callable(**kwargs):
 - op_args (Collection[Any] | None) – 함수 내에서 사용할 위치 인자들의 목록으로 함수 호출 시 언패킹되어 함수에 전달된다.
 - templates_dict (dict[str, Any] | None) – 값이 템플릿화될 dictionary이다. Airflow 엔진은 `__init__`와 `execute` 사이에 이 값을 템플릿화한다. 템플릿이 적용된 후에는 해당 값들이 callable의 컨텍스트에서 사용 가능하다.
 - templates_exts (Sequence[str] | None) – 템플릿 필드를 처리하는 동안 해결할 파일 확장자들의 목록이다. 예를 들면 `['.sql', '.hql']`와 같은 형태로 사용된다.
-- show_return_value_in_logs (bool) – 반환 값 로그를 표시할지 여부를 나타내는 boolean 값이다. 기본값은 True로, 반환 값 로그 출력을 허용한다.
+- show_return_value_in_logs (bool) – 반환 값 로그를 표시할지 여부를 나타내는 boolean 값이다. 기본값은 True로, 반환 값 로그 출력을 허용한다. 큰 데이터(예: 대량의 XCom을 TaskAPI에 전송하는 경우)를 반환할 때 로그 출력을 방지하려면 False로 설정하면 된다.
 - execution_timeout (timedelta) - 함수 최대 실행 시간을 지정한다. 해당 시간을 초과하면 task는 fail된다. `execution_timeout=timedelta(seconds=600)`로 설정하면 함수가 10분내에 성공하지 못할시 재시도한다.
-큰 데이터(예: 대량의 XCom을 TaskAPI에 전송하는 경우)를 반환할 때 로그 출력을 방지하려면 False로 설정하면 된다.
+
 
 ## example
 ```
