@@ -4,9 +4,15 @@
 # airflow.models.dag.DAG
 ```
 classairflow.models.dag.DAG(dag_id, description=None, schedule=NOTSET, start_date=None, end_date=None,
-full_filepath=None, template_searchpath=None, template_undefined=jinja2.StrictUndefined,
-user_defined_macros=None, user_defined_filters=None, default_args=None, concurrency=None, max_active_tasks=airflow_conf.getint('core', 'max_active_tasks_per_dag'), max_active_runs=airflow_conf.getint('core', 'max_active_runs_per_dag'), dagrun_timeout=None, sla_miss_callback=None, default_view=airflow_conf.get_mandatory_value('webserver', 'dag_default_view').lower(), orientation=airflow_conf.get_mandatory_value('webserver', 'dag_orientation'), catchup=airflow_conf.getboolean('scheduler', 'catchup_by_default'), on_success_callback=None, on_failure_callback=None, doc_md=None, params=None, access_control=None, is_paused_upon_creation=None, jinja_environment_kwargs=None, render_template_as_native_obj=False, tags=None, owner_links=None, auto_register=True, fail_stop=False, schedule_interval=NOTSET, timetable=None) [source](https://airflow.apache.org/docs/apache-airflow/stable/_modules/airflow/models/dag.html#DAG)
+                            full_filepath=None, template_searchpath=None, template_undefined=jinja2.StrictUndefined,
+user_defined_macros=None, user_defined_filters=None, default_args=None, concurrency=None, max_active_tasks=airflow_conf.getint('core', 'max_active_tasks_per_dag'),
+max_active_runs=airflow_conf.getint('core', 'max_active_runs_per_dag'), dagrun_timeout=None, sla_miss_callback=None,
+default_view=airflow_conf.get_mandatory_value('webserver', 'dag_default_view').lower(), orientation=airflow_conf.get_mandatory_value('webserver', 'dag_orientation'),
+catchup=airflow_conf.getboolean('scheduler', 'catchup_by_default'), on_success_callback=None, on_failure_callback=None, doc_md=None, params=None, access_control=None,
+is_paused_upon_creation=None, jinja_environment_kwargs=None, render_template_as_native_obj=False, tags=None, owner_links=None, auto_register=True,
+fail_stop=False, schedule_interval=NOTSET, timetable=None) 
 ```
+[source](https://airflow.apache.org/docs/apache-airflow/stable/_modules/airflow/models/dag.html#DAG)
 
 시간을 지정할 때는 반드시 `pendulum`을 사용해야 한다. `datetime.timezone` 라이브러리는 한계점이 존재하여 Airflow에서 사용하지 못하도록 설정하였다.
 
@@ -54,7 +60,15 @@ catchup (bool) – Perform scheduler catchup (or only run latest)? Defaults to T
 on_failure_callback (None | DagStateChangeCallback | list[DagStateChangeCallback]) – A function or list of functions to be called when a DagRun of this dag fails. A context dictionary is passed as a single parameter to this function.
 
 on_success_callback (None | DagStateChangeCallback | list[DagStateChangeCallback]) – Much like the on_failure_callback except that it is executed when the dag succeeds.
+render_template_as_native_obj (bool) – If True, uses a Jinja NativeEnvironment to render templates as native Python types. If False, a Jinja Environment is used to render templates as string values.
 
+tags (list[str] | None) – List of tags to help filtering DAGs in the UI.
+
+owner_links (dict[str, str] | None) – Dict of owners and their links, that will be clickable on the DAGs view UI. Can be used as an HTTP link (for example the link to your Slack channel), or a mailto link. e.g: {“dag_owner”: “https://airflow.apache.org/”}
+
+auto_register (bool) – Automatically register this DAG when it is used in a with block
+
+fail_stop (bool) – Fails currently running tasks when task in DAG fails. Warning: A fail stop dag can only have tasks with the default trigger rule (“all_success”). An exception will be thrown if any task in a fail stop dag has a non default trigger rule.
 access_control (dict | None) – Specify optional DAG-level actions, e.g., “{‘role1’: {‘can_read’}, ‘role2’: {‘can_read’, ‘can_edit’, ‘can_delete’}}”
 
 is_paused_upon_creation (bool | None) – Specifies if the dag is paused when created for the first time. If the dag exists already, this flag will be ignored. If this optional parameter is not specified, the global config setting will be used.
