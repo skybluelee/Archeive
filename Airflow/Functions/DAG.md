@@ -54,44 +54,26 @@ default_args에서 정의된 것이 먼저 사용되고, 이후에 operator의 �
 - catchup (bool) – True로 설정하면 start_date부터 현재까지 모든 DAG를 실행한다. False로 설정하면 가장 최신의 DAG만 실행한다.
 - concurrency (int) - DAG에 의해 동시에 실행될 수 있는 특정 task 인스턴스의 최대 수를 지정한다. concurrency=5로 설정하면, 특정 task는 해당 DAG 내에서 최대 5개의 인스턴스만 동시에 실행될 수 있다.
 - dagrun_timeout (datetime.timedelta | None) – DAG Run이 실행될 수 있는 최대 지속 시간을 설정한다. 이 시간을 넘어가면 해당 DAG는 자동으로 중지된다.
+- tags (list[str] | None) – UI에서 DAG를 필터링하는데 도움을 주는 list이다.
 
+- full_filepath (string) - DAG 파일의 전체 경로를 나타낸다.
+- template_searchpath (str | Iterable[str] | None) – 이 폴더 목록(상대 경로가 아닌)은 jinja가 템플릿을 찾을 위치를 정의한다. 순서가 중요하며, jinja/airflow는 기본적으로 DAG 파일의 경로를 포함한다.
+- template_undefined (type[jinja2.StrictUndefined]) – Airflow에서 사용되는 예외(exception) 클래스로, Jinja 템플릿에서 정의되지 않은 변수나 매크로를 참조하려고 시도할 때 발생한다.
+- user_defined_macros (dict | None) – 이 jinja 템플릿에서 사용할 매크로들의 dictionary이다. 예를 들어, 이 인자에 `dict(foo='bar')`를 전달하면 이 DAG와 관련된 모든 jinja 템플릿에서 `{{ foo }}`를 사용할 수 있다. 여기서 어떤 종류의 객체도 전달할 수 있다.
+- user_defined_filters (dict | None) – 이 인자는 jinja 템플릿에서 사용할 사용자 정의 필터들의 dictionary이다. 예를 들어, `dict(hello=lambda name: 'Hello %s' % name)`를 이 인자에 전달하면 이 DAG와 관련된 모든 jinja 템플릿에서 `{{ 'world' | hello }}`와 같이 필터를 사용할 수 있다.
+- sla_miss_callback (None | SLAMissCallback | list[SLAMissCallback]) – sla_miss_callback은 SLA(서비스 수준 계약) 시간 초과를 보고할 때 호출할 함수나 함수들의 목록이다. 자세한 사항은 [sla_miss_callback](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/tasks.html#concepts-sla-miss-callback)을 참조하라.
+- default_view (str) – DAG의 기본 뷰(그리드, 그래프, 길이, gantt(시간 경과에 따른 task 실행 상태 표현), landing_times(task가 언제 DAG에 도착했는지 표현))를 설정한다.
+- orientation (str) – DAG 그래프 뷰에서 그래프 방향(LR, TB, RL, BT)을 지정한다. 디폴트 값은 LR(왼쪽에서 오른쪽으로)이다.
+- doc_md (str) - DAG 객체의 속성 중 하나로, DAG에 대한 문서나 설명을 Markdown 형식으로 제공하는 문자열이다.
+- access_control (rbac | superuser_role | viewer_role | user_role | public_role) - Airflow 웹 서버의 보안 및 접근 제어 설정을 관리한다. 이 설정을 통해 특정 사용자나 그룹에 대한 웹 UI, API, CLI 등의 접근 권한을 정의하고 제어할 수 있다.
+- is_paused_upon_creation (bool | None) – DAG가 처음 생성될 때 일시 중지 상태(paused)로 설정할 것인지 지정한다. DAG가 이미 존재하는 경우 이 플래그는 무시된다. 이 선택적 매개변수가 지정되지 않으면, 전역 설정 설정이 사용된다.
+- jinja_environment_kwargs (dict | None) – 템플릿 렌더링을 위해 Jinja 환경에 전달되는 추가적인 설정 옵션들을 나타낸다.
+- params (collections.abc.MutableMapping | None) – 템플릿에서 접근할 수 있는 DAG 수준의 매개변수들을 params 네임스페이스 아래에 정의된 dictionary 형태로 제공한다. 매개변수들은 task 수준에서 재정의(override)될 수 있다.
+- owner_links (dict[str, str] | None) – DAG 뷰 UI에서 클릭 가능한 링크로 표시될 소유자(owner) 및 해당 링크들의 dictionary이다. 이 링크들은 HTTP 링크(예: Slack 채널로의 링크) 또는 mailto 링크와 같은 형태로 사용될 수 있다. 예시로는 `{"dag_owner": "https://airflow.apache.org/"}`와 같은 형식이 있다.
+- auto_register (bool) – DAG가 특정 디렉토리에서 사용되는 경우 Airflow가 자동으로 DAG를 등록한다.
+- fail_stop (bool) – DAG 내의 특정 task가 실패할 때 현재 실행 중인 task도 중단된다. 주의: 중단(stop) 타입의 DAG는 "all_success"와 같은 기본 트리거 규칙을 가진 task만 포함할 수 있다. 중단 타입의 DAG에 기본 트리거 규칙이 아닌 다른 규칙을 가진 task가 있다면 예외가 발생한다.
+- render_template_as_native_obj (bool) – 만약 True인 경우, 템플릿을 원래의 Python 타입으로 렌더링하기 위해 Jinja NativeEnvironment를 사용한다. 만약 False인 경우, 템플릿을 문자열 값으로 렌더링하기 위해 Jinja Environment가 사용된다.
 
-template_searchpath (str | Iterable[str] | None) – This list of folders (non-relative) defines where jinja will look for your templates. Order matters. Note that jinja/airflow includes the path of your DAG file by default
-
-template_undefined (type[jinja2.StrictUndefined]) – Template undefined type.
-
-user_defined_macros (dict | None) – a dictionary of macros that will be exposed in your jinja templates. For example, passing dict(foo='bar') to this argument allows you to {{ foo }} in all jinja templates related to this DAG. Note that you can pass any type of object here.
-
-user_defined_filters (dict | None) – a dictionary of filters that will be exposed in your jinja templates. For example, passing dict(hello=lambda name: 'Hello %s' % name) to this argument allows you to {{ 'world' | hello }} in all jinja templates related to this DAG.
-
-
-params (collections.abc.MutableMapping | None) – a dictionary of DAG level parameters that are made accessible in templates, namespaced under params. These params can be overridden at the task level.
-
-
-
-
-
-dagrun_timeout (datetime.timedelta | None) – specify how long a DagRun should be up before timing out / failing, so that new DagRuns can be created.
-
-sla_miss_callback (None | SLAMissCallback | list[SLAMissCallback]) – specify a function or list of functions to call when reporting SLA timeouts. See sla_miss_callback for more information about the function signature and parameters that are passed to the callback.
-
-default_view (str) – Specify DAG default view (grid, graph, duration, gantt, landing_times), default grid
-
-orientation (str) – Specify DAG orientation in graph view (LR, TB, RL, BT), default LR
-
-
-
-
-tags (list[str] | None) – List of tags to help filtering DAGs in the UI.
-
-owner_links (dict[str, str] | None) – Dict of owners and their links, that will be clickable on the DAGs view UI. Can be used as an HTTP link (for example the link to your Slack channel), or a mailto link. e.g: {“dag_owner”: “https://airflow.apache.org/”}
-
-auto_register (bool) – Automatically register this DAG when it is used in a with block
-
-fail_stop (bool) – Fails currently running tasks when task in DAG fails. Warning: A fail stop dag can only have tasks with the default trigger rule (“all_success”). An exception will be thrown if any task in a fail stop dag has a non default trigger rule.
-access_control (dict | None) – Specify optional DAG-level actions, e.g., “{‘role1’: {‘can_read’}, ‘role2’: {‘can_read’, ‘can_edit’, ‘can_delete’}}”
-
-is_paused_upon_creation (bool | None) – Specifies if the dag is paused when created for the first time. If the dag exists already, this flag will be ignored. If this optional parameter is not specified, the global config setting will be used.
 ## default_args
 ```
 default_args={"owner": "airflow", "retries": 3, "start_date": datetime.datetime(2022, 1, 1)}
