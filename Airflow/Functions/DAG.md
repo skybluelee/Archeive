@@ -24,8 +24,6 @@ classairflow.models.dag.DAG(dag_id, description=None, schedule=NOTSET, start_dat
 
 공식문서에는 없는 몇가지 파라미터를 추가하였다. DAG보다는 Operator에 사용하나, DAG 내부에서도 정의가 가능하기에 추가하였다.
 
-시간을 지정할 때는 반드시 `pendulum`을 사용해야 한다. `datetime.timezone` 라이브러리는 한계점이 존재하여 Airflow에서 사용하지 못하도록 설정하였다.
-
 2.4 버전부터 시간 기반의 스케쥴링 로직 또는 데이터셋 기반의 트리거를 인자로 지정할 수 있게 되었다.
 
 2.4 버전부터 schedule_interval과 timetable은 schedule의 인자로 병합되었다.
@@ -55,7 +53,7 @@ default_args에서 정의된 것이 먼저 사용되고, 이후에 operator의 �
 - concurrency (int) - DAG에 의해 동시에 실행될 수 있는 특정 task 인스턴스의 최대 수를 지정한다. concurrency=5로 설정하면, 특정 task는 해당 DAG 내에서 최대 5개의 인스턴스만 동시에 실행될 수 있다.
 - dagrun_timeout (datetime.timedelta | None) – DAG Run이 실행될 수 있는 최대 지속 시간을 설정한다. 이 시간을 넘어가면 해당 DAG는 자동으로 중지된다.
 - tags (list[str] | None) – UI에서 DAG를 필터링하는데 도움을 주는 list이다.
-
+***
 - full_filepath (string) - DAG 파일의 전체 경로를 나타낸다.
 - template_searchpath (str | Iterable[str] | None) – 이 폴더 목록(상대 경로가 아닌)은 jinja가 템플릿을 찾을 위치를 정의한다. 순서가 중요하며, jinja/airflow는 기본적으로 DAG 파일의 경로를 포함한다.
 - template_undefined (type[jinja2.StrictUndefined]) – Airflow에서 사용되는 예외(exception) 클래스로, Jinja 템플릿에서 정의되지 않은 변수나 매크로를 참조하려고 시도할 때 발생한다.
@@ -74,6 +72,27 @@ default_args에서 정의된 것이 먼저 사용되고, 이후에 operator의 �
 - fail_stop (bool) – DAG 내의 특정 task가 실패할 때 현재 실행 중인 task도 중단된다. 주의: 중단(stop) 타입의 DAG는 "all_success"와 같은 기본 트리거 규칙을 가진 task만 포함할 수 있다. 중단 타입의 DAG에 기본 트리거 규칙이 아닌 다른 규칙을 가진 task가 있다면 예외가 발생한다.
 - render_template_as_native_obj (bool) – 만약 True인 경우, 템플릿을 원래의 Python 타입으로 렌더링하기 위해 Jinja NativeEnvironment를 사용한다. 만약 False인 경우, 템플릿을 문자열 값으로 렌더링하기 위해 Jinja Environment가 사용된다.
 
+## start_date, end_date
+시간을 지정할 때는 반드시 `pendulum`을 사용해야 한다. `datetime.timezone` 라이브러리는 한계점이 존재하여 Airflow에서 사용하지 못하도록 설정하였다.
+```
+import pendulum
+
+from airflow import DAG
+from airflow.example_dags.plugins.workday import AfterWorkdayTimetable
+
+
+with DAG(
+    dag_id="example_after_workday_timetable_dag",
+    start_date=pendulum.datetime(2021, 3, 10, tz="UTC"),
+    schedule=AfterWorkdayTimetable(),
+    tags=["example", "timetable"],
+):
+    ...
+```
+대한민국과 UTC차이는 9시간으로 `pendulum` 없이 사용하고자 하면 UTC + 9시간으로 설정하면 된다.
+
+## 
+
 ## default_args
 ```
 default_args={"owner": "airflow", "retries": 3, "start_date": datetime.datetime(2022, 1, 1)}
@@ -85,17 +104,9 @@ retries=3
 위는 딕셔너리 방식(default_args 사용)이고, 아래는 키워드 인자 방식으로 둘의 효과는 동일하다.
 
 동일한 효과인데 default_args를 사용하는 이유는 아래와 같다.
-- 일관된 설정 관리: 여러 task에서 동일한 설정 값을 반복적으로 정의하는 것을 피하기 위해 default_args를 사용하여 일관된 기본 설정을 한 번에 정의할 수 있습니다.
-
-- 중앙 집중적인 설정: DAG의 여러 task가 같은 소유자, 재시도 횟수, 이메일 알림 등의 설정을 공유할 때, 중앙에서 한 곳에서 이러한 설정을 관리할 수 있습니다.
-
-- 유지 관리 용이성: default_args를 사용하면 한 곳에서 DAG의 기본 설정을 쉽게 수정하거나 업데이트할 수 있습니다. 이를 통해 코드의 중복성을 줄이고 유지 관리를 간소화할 수 있습니다.
-
-- 문서화: default_args를 사용하여 각 DAG의 기본 설정을 명시적으로 정의하면, 다른 개발자나 팀원들이 DAG의 동작 및 설정에 대해 더 쉽게 이해하고 문서화할 수 있습니다.
-
-- 재사용성: 동일한 기본 설정을 가진 여러 DAG나 task가 있을 경우, default_args를 사용하여 해당 설정을 재사용하고 다른 DAG나 task에서 쉽게 적용할 수 있습니다.
-
-- 오류 방지: default_args를 사용하여 기본적인 설정 값을 제공함으로써, task나 DAG를 정의할 때 필수적인 설정을 누락하는 경우의 오류를 방지할 수 있습니다.
-
-
-
+- 일관된 설정 관리: 여러 task에서 동일한 설정 값을 반복적으로 정의하는 것을 피하기 위해 default_args를 사용하여 일관된 기본 설정을 한 번에 정의할 수 있다.
+- 중앙 집중적인 설정: DAG의 여러 task가 같은 소유자, 재시도 횟수, 이메일 알림 등의 설정을 공유할 때, 중앙에서 한 곳에서 이러한 설정을 관리할 수 있다.
+- 유지 관리 용이성: default_args를 사용하면 한 곳에서 DAG의 기본 설정을 쉽게 수정하거나 업데이트할 수 있다. 이를 통해 코드의 중복성을 줄이고 유지 관리를 간소화할 수 있다.
+- 문서화: default_args를 사용하여 각 DAG의 기본 설정을 명시적으로 정의하면, 다른 개발자나 팀원들이 DAG의 동작 및 설정에 대해 더 쉽게 이해하고 문서화할 수 있다.
+- 재사용성: 동일한 기본 설정을 가진 여러 DAG나 task가 있을 경우, default_args를 사용하여 해당 설정을 재사용하고 다른 DAG나 task에서 쉽게 적용할 수 있다.
+- 오류 방지: default_args를 사용하여 기본적인 설정 값을 제공함으로써, task나 DAG를 정의할 때 필수적인 설정을 누락하는 경우의 오류를 방지할 수 있다.
