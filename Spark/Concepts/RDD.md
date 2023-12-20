@@ -68,16 +68,136 @@ Python 객체를 Java 객체로 unpickle하고, 그 다음에 이를 Writables�
 
 > pickle: Python에서 제공하는 직렬화 프로토콜이다. 직렬화(serialization)는 객체의 상태나 데이터를 저장하거나 전송 가능한 형식으로 변환하는 프로세스를 의미하며, pickle은 Python 객체를 바이트 스트림으로 변환하는 데 사용되고, 이 바이트 스트림은 나중에 원래의 객체로 복원될 수 있다.
 
+배열은 기본적으로 처리되지 않는다.
+사용자들은 읽기 또는 쓰기 시 사용자 정의 `ArrayWritable` 하위 타입을 명시적으로 지정해야 한다.
+쓰기 시에는 배열을 사용자 정의 `ArrayWritable` 하위 타입으로 변환하는 사용자 정의 변환기(converter)도 명시해야 한다.
+읽기 시에는 기본 변환기가 사용자 정의 `ArrayWritable` 하위 타입을 `Java Object[]`로 변환하며, 이 후에 Python 튜플로 pickle된다.
+원시 타입의 배열에 대한 Python `array.array`를 얻으려면 사용자들은 사용자 정의 변환기를 명시적으로 지정해야 한다.
 
-RDD는 두 가지 유형의 연산을 지원합니다: 변환(transformations)은 기존 데이터셋에서 새로운 데이터셋을 생성하는 연산이며, 액션(actions)은 데이터셋에 대한 계산을 실행한 후 드라이버 프로그램에 값을 반환합니다.
-예를 들어, map은 각 데이터셋 요소를 함수를 통해 전달하고 결과를 나타내는 새로운 RDD를 반환하는 변환입니다. 
-반면에, reduce는 RDD의 모든 요소를 어떤 함수를 사용하여 집계하고 최종 결과를 드라이버 프로그램에 반환하는 액션입니다(분산 데이터셋을 반환하는 parallel reduceByKey도 있습니다).
+## Saving and Loading SequenceFiles
+```
+>>> rdd = sc.parallelize(range(1, 4)).map(lambda x: (x, "a" * x))
+>>> rdd.saveAsSequenceFile("path/to/file")
+>>> sorted(sc.sequenceFile("path/to/file").collect())
+[(1, u'a'), (2, u'aa'), (3, u'aaa')]
+```
+텍스트 파일과 마찬가지로, SequenceFiles는 경로를 지정하여 저장하고 로드할 수 있다. 
+키와 값 클래스는 지정할 수 있지만, 표준 Writables의 경우 이는 필수가 아니다.
 
-Spark에서의 모든 변환은 지연(lazy) 방식으로 실행되어 결과를 즉시 계산하지 않습니다. 대신, 기본 데이터셋(예: 파일)에 적용된 변환을 기억합니다. 액션이 결과를 드라이버 프로그램에 반환해야 할 때만 변환들이 계산됩니다. 이 설계는 Spark가 더 효율적으로 실행될 수 있도록 합니다. 예를 들어, map을 통해 생성된 데이터셋이 reduce에서 사용될 것임을 인식하고, 큰 매핑된 데이터셋이 아닌 reduce의 결과만을 드라이버에 반환할 수 있습니다.
+## Saving and Loading Other Hadoop Input/Output Formats
+PySpark는 'new' 그리고 'old' Hadoop MapReduce API 모두에 대해 어떤 Hadoop InputFormat을 읽거나 어떤 Hadoop OutputFormat을 작성할 수 있다.
+필요한 경우, Hadoop 구성을 Python 딕셔너리로 전달할 수 있다.
+Elasticsearch ESInputFormat을 사용한 예시는 다음과 같다.
+```
+$ ./bin/pyspark --jars /path/to/elasticsearch-hadoop.jar
+>>> conf = {"es.resource" : "index/type"}  # assume Elasticsearch is running on localhost defaults
+>>> rdd = sc.newAPIHadoopRDD("org.elasticsearch.hadoop.mr.EsInputFormat",
+                             "org.apache.hadoop.io.NullWritable",
+                             "org.elasticsearch.hadoop.mr.LinkedMapWritable",
+                             conf=conf)
+>>> rdd.first()  # the result is a MapWritable that is converted to a Python dict
+(u'Elasticsearch ID',
+ {u'field1': True,
+  u'field2': u'Some Text',
+  u'field3': 12345})
+```
+InputFormat이 Hadoop 구성과/또는 입력 경로에만 의존하고 키와 값 클래스가 위의 표에 따라 쉽게 변환될 수 있다면, 위의 접근 방식은 해당 경우에 잘 작동할 것이다.
 
-기본적으로 각 변환된 RDD는 해당 RDD에 액션을 실행할 때마다 다시 계산될 수 있습니다. 
-그러나 persist(또는 cache) 메서드를 사용하여 RDD를 메모리에 유지할 수도 있으며, 이 경우 Spark는 클러스터에서 요소를 계속 유지하여 다음 번에 더 빠른 액세스를 제공합니다.
-RDD를 디스크에 지속적으로 저장하거나 여러 노드에 복제하는 기능도 지원됩니다.
+Cassandra나 HBase에서 데이터를 로드하는 경우와 같이 사용자 정의 직렬화된 2진 데이터를 가지고 있다면, 먼저 Scala/Java 쪽에서 pickle의 pickler가 처리할 수 있는 형식으로 해당 데이터를 변환해야 한다.
+이를 위해 [Converter](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/api/python/Converter.html) 특성이 제공된다.
+이 특성을 확장하고 변환 메서드에서 변환 코드를 구현하면 된다.
+`InputFormat`에 접근하는데 필요한 종속성을 갖고 있는 해당 클래스는 Spark job jar에 패키지로 포함되고, PySpark 클래스 경로에 포함되어야 한다.
+
+Cassandra / HBase `InputFormat` 및 `OutputFormat`을 사용하는 사용자 정의 변환기와 관련한 예제를 보려면 [Python 예제](https://github.com/apache/spark/tree/master/examples/src/main/python)와 [Converter 예제](https://github.com/apache/spark/tree/master/examples/src/main/scala/org/apache/spark/examples/pythonconverters)를 참조하라.
+
+# RDD 연산
+RDDs는 2가지 종류의 연산을 지원한다 - transformation 연산은 기존의 데이터셋에서 새로운 데이터셋을 생성하는 연산이며, action 연산은 데이터셋에 대한 계산을 실행한 후 드라이버 프로그램에 값을 반환한다.
+예를 들면, `map`은 각 데이터셋 요소를 함수를 통해 전달하고 결과를 나타내는 새로운 RDD를 반환하는 transformation 연산이다.
+반면에, `reduce`는 RDD의 모든 요소를 특정 함수를 사용하여 집계하고 최종 결과를 드라이버 프로그램에 반환하는 action 연산이다(물론 분산 데이터셋을 반환하는 parallel `reduceByKey`도 있다).
+
+Spark의 모든 transformation 연산은 lazy하다. 
+이는 transformation 연산이 즉시 결과를 계산하지 않는다는 것을 의미한다.
+대신, 기본 데이터셋에 적용된 변환을 기억만 한다.
+action 연산에서 결과를 드라이버 프로그램에 반환해야 할 때만 transformation 연산이 계산된다.
+이 설계 방식은 Spark가 더 효율적으로 실행되도록 만든다.
+예를 들어, `map`을 통해 생성된 데이터셋이 `reduce`에서 사용될 것임을 알고, 매핑된 큰 데이터셋이 아닌 `reduce`의 결과만을 드라이버에 반환할 수 있다.
+
+기본적으로 각 transform된 RDD는 action을 실행할 때마다 다시 계산될 수 있다. 
+그러나 persist(또는 cache) 메서드를 사용하여 RDD를 메모리에 유지할 수도 있으며, 이 경우 Spark는 다음 번에 쿼리할 때 빠른 액세스를 위해 클러스터의 요소를 유지한다. 
+RDD를 디스크에 지속적으로 저장하거나 여러 노드에 복제하는 기능도 지원된다.
+
+## 기초
+```
+lines = sc.textFile("data.txt")
+lineLengths = lines.map(lambda s: len(s))
+totalLength = lineLengths.reduce(lambda a, b: a + b)
+```
+첫 번째 줄은 외부 파일에서 기본 RDD를 정의한다.
+이 데이터셋은 메모리에 로드되거나 다른 방식으로 처리되지 않는다: lines는 단순히 파일을 가리키는 포인터일 뿐이다.
+두 번째 줄에서는 map 변환의 결과로 `lineLengths`를 정의한다.
+여기서도 laziness 때문에 `lineLengths`는 즉시 계산되지 않는다.
+마지막으로 우리는 action인 reduce를 실행한다.
+이 시점에서 Spark는 계산을 별도의 머신에서 실행할 작업으로 분할하고, 각 머신은 map과 reduce를 모두 실행하여, 답변만을 드라이버 프로그램에 반환한다.
+```
+lineLengths.persist()
+```
+`lineLengths`를 나중에 다시 사용하길 원한다면 위 코드를 reduce 이전에 추가하면 된다.
+그렇게 하면 `lineLengths`는 처음 계산된 이후 메모리에 저장된다.
+
+## Passing Functions to Spark
+Spark의 API는 클러스터에서 실행되기 위해 드라이버 프로그램에서 함수를 전달하는 것을 매우 의존한다.
+이를 수행하는 세 가지 권장 방법이 있다.
+1. 간단한 함수로서 식으로 작성할 수 있는 경우에는 람다 표현식을 사용한다. (람다는 여러 문장 또는 값을 반환하지 않는 문장을 지원하지 않는다.)
+2. 더 긴 코드의 경우, Spark에 호출되는 함수 내부에 local로 정의한다.
+3. 모듈 내의 최상위 함수(top-level functions)를 사용한다.
+
+```
+"""MyScript.py"""
+if __name__ == "__main__":
+    def myFunc(s):
+        words = s.split(" ")
+        return len(words)
+
+    sc = SparkContext(...)
+    sc.textFile("file.txt").map(myFunc)
+```
+예를 들어, 람다를 사용하기에 긴 코드는 위와 같이 사용한다.
+***
+```
+class MyClass(object):
+    def func(self, s):
+        return s
+    def doStuff(self, rdd):
+        return rdd.map(self.func)
+```
+참고로 클래스 인스턴스의 메서드 참조를 전달하는 것도 가능하다(싱글턴 객체와는 반대로). 
+그러나 이는 해당 클래스를 포함하는 객체를 메서드와 함께 전송해야 하는 것을 의미한다.
+
+> 싱글턴 객체: 싱글턴 객체(Singleton object)는 오직 하나의 인스턴스만을 가지는 객체를 의미한다. 즉, 클래스로부터 생성된 객체 중에서 오직 한 번만 생성되어 프로그램 전체에서 공유되는 객체를 말한다.
+
+***
+```
+class MyClass(object):
+    def __init__(self):
+        self.field = "Hello"
+    def doStuff(self, rdd):
+        return rdd.map(lambda s: self.field + s)
+```
+새로운 `MyClass`를 생성하고 그 위에 `doStuff`를 호출하면, 그 내부의 map은 그 MyClass 인스턴스의 func 메서드를 참조하므로 전체 객체가 클러스터로 전송되어야 한다.
+
+비슷한 방식으로, 외부 객체의 필드에 접근하면 전체 객체가 참조된다.
+***
+```
+def doStuff(self, rdd):
+    field = self.field
+    return rdd.map(lambda s: field + s)
+```
+이 문제를 피하기 위한 가장 간단한 방법은 외부적으로 접근하는 대신 필드를 로컬 변수로 복사하는 것이다.
+
+## Understanding closures
+
+
+# ㅊ디ㅐㅎ
 RDD는 불변성(Immutable)을 가지며, 여러 노드에 분산되어 저장되는 분산 컬렉션입니다.
 RDD는 Spark의 핵심 데이터 모델로 사용되며, 다양한 연산을 지원하여 데이터 처리 및 분석 작업을 수행할 수 있습니다.
 
