@@ -1,0 +1,101 @@
+해당 문서는 [RDD Programming Guide](https://spark.apache.org/docs/latest/rdd-programming-guide.html#resilient-distributed-datasets-rdds)를 바탕으로 작성하였다.
+# RDD
+Spark는 RDD(Resilient Distributed Dataset)라는 개념을 중심으로 동작한다. 
+RDD는 Spark에서 데이터를 나타내는 기본 추상화 방식으로, 병렬로 작동할 수 있는 요소들의 장애 허용(fault-tolerant) 컬렉션이다. 
+RDD를 생성하는 방법으로는
+기존의 컬렉션을 드라이버 프로그램에서 병렬화하는 방법 또는 공유 파일 시스템, HDFS, HBase 또는 Hadoop InputFormat을 제공하는 기타 데이터 소스와 같은 외부 저장 시스템에서 데이터셋을 참조하는 방법 2가지가 존재한다.
+
+# 병렬 컬렉션(Parallelized Collections)
+병렬 컬렉션은 드라이버 프로그램 내의 기존 반복 가능한(iterable) 객체나 컬렉션에 SparkContext의 `parallelize`  메서드를 호출하여 생성된다.
+컬렉션의 요소들은 병렬로 작동할 수 있는 분산 데이터셋을 형성하기 위해 복사된다.
+예를 들어, 숫자 1부터 5까지를 포함하는 병렬 컬렉션을 생성하는 방법은 다음과 같다.
+```
+data = [1, 2, 3, 4, 5]
+distData = sc.parallelize(data)
+```
+생성된 분산 데이터셋(distData)은 병렬로 작동할 수 있다.
+예를 들어, `distData.reduce(lambda a, b: a + b)`를 호출하여 리스트의 요소들을 합할 수 있다.
+분산 데이터셋에 대한 연산에 대해서는 이후에 설명한다.
+
+병렬 컬렉션에 대한 중요한 매개변수 중 하나는 데이터셋을 나눌 파티션의 개수이다.
+Spark는 클러스터의 각 파티션에 대해 하나의 task를 실행한다.
+일반적으로 클러스터의 각 CPU당 2-4개의 파티션을 사용한다.
+보통, Spark는 클러스터에 기반하여 자동으로 파티션의 수를 설정하려고 시도한다.
+그러나, `parallelize`의 두 번째 파라미터로 전달하여 수동으로 설정할 수 있다 (예: `sc.parallelize(data, 10)`). 
+참고: 코드의 일부 위치에서는 역호환성을 유지하기 위해 파티션의 동의어인 slices라는 용어를 사용함.
+
+# 외부 데이터셋
+PySpark는 Hadoop에서 지원하는 모든 저장소 소스(로컬 파일 시스템, HDFS, Cassandra, HBase, Amazon S3)에서 분산 데이터셋을 생성할 수 있다.
+Spark는 텍스트 파일, SequenceFiles 및 Hadoop InputFormat의 다른 파일 형식을 지원한다.
+
+SparkContext의 `textFile` 메서드를 사용하여 텍스트 파일 RDD를 생성할 수 있다.
+이 메서드는 파일에 대한 URI(머신 내의 로컬 경로 또는 hdfs://, s3a:// 등의 URI)를 가져와 그것을 라인의 컬렉션으로 읽는다. 아래는 해당 예시이다.
+
+```
+>>> distFile = sc.textFile("data.txt")
+```
+생성된 후에 distFile은 데이터셋 연산으로 처리할 수 있다. 
+예를 들어, `distFile.map(lambda s: len(s)).reduce(lambda a, b: a + b)`를 사용하여 `map`과 `reduce`를 사용하는 모든 라인의 크기를 사용하여 합할 수 있다.
+
+Spark에서 파일을 읽는 데 대한 몇 가지 주의점:
+- 로컬 파일 시스템의 경로를 사용하는 경우, 해당 파일은 워커 노드의 동일한 경로에서도 접근 가능해야 한다. 그렇지 않으면 모든 워커에 파일을 복사하거나 네트워크로 마운트된 공유 파일 시스템을 사용해야 한다.
+- textFile을 포함한 Spark의 모든 파일 기반 입력 방법은 디렉터리, 압축된 파일, 와일드카드도 지원합니다. 예를 들면, textFile("/my/directory"), textFile("/my/directory/*.txt"), textFile("/my/directory/*.gz") 등을 사용할 수 있습니다.
+
+- textFile 메서드는 파일의 파티션 수를 제어하기 위한 선택적 두 번째 인수도 사용합니다. 기본적으로 Spark는 파일의 각 블록(기본적으로 HDFS에서는 128MB)에 대해 하나의 파티션을 생성합니다. 그러나 더 큰 값으로 전달하여 더 많은 파티션을 요청할 수도 있습니다. 블록보다 적은 파티션을 가질 수 없음을 유의하세요.
+
+텍스트 파일 외에도 Spark의 Python API는 여러 다른 데이터 형식을 지원합니다:
+
+- SparkContext.wholeTextFiles는 여러 작은 텍스트 파일을 포함하는 디렉터리를 읽고, 각각을 (파일 이름, 내용) 쌍으로 반환합니다. 이것은 textFile과 대조적으로 각 파일의 각 라인마다 하나의 레코드를 반환합니다.
+
+- RDD.saveAsPickleFile 및 SparkContext.pickleFile은 pickle Python 객체로 구성된 간단한 형식으로 RDD를 저장하는 것을 지원합니다. pickle 직렬화에서는 기본 배치 크기 10을 사용합니다.
+
+- SequenceFile 및 Hadoop Input/Output Formats
+
+이 기능은 현재 실험적으로 표시되어 있으며, 고급 사용자를 위해 설계되었습니다. Spark SQL을 기반으로 한 읽기/쓰기 지원으로 대체될 수 있으며, 이 경우 Spark SQL이 선호되는 접근 방식입니다.
+
+All of Spark’s file-based input methods, including textFile, support running on directories, compressed files, and wildcards as well. For example, you can use textFile("/my/directory"), textFile("/my/directory/*.txt"), and textFile("/my/directory/*.gz").
+
+The textFile method also takes an optional second argument for controlling the number of partitions of the file. By default, Spark creates one partition for each block of the file (blocks being 128MB by default in HDFS), but you can also ask for a higher number of partitions by passing a larger value. Note that you cannot have fewer partitions than blocks.
+
+Apart from text files, Spark’s Python API also supports several other data formats:
+
+SparkContext.wholeTextFiles lets you read a directory containing multiple small text files, and returns each of them as (filename, content) pairs. This is in contrast with textFile, which would return one record per line in each file.
+
+RDD.saveAsPickleFile and SparkContext.pickleFile support saving an RDD in a simple format consisting of pickled Python objects. Batching is used on pickle serialization, with default batch size 10.
+
+SequenceFile and Hadoop Input/Output Formats
+
+Note this feature is currently marked Experimental and is intended for advanced users. It may be replaced in future with read/write support based on Spark SQL, in which case Spark SQL is the preferred approach.
+
+RDD는 두 가지 유형의 연산을 지원합니다: 변환(transformations)은 기존 데이터셋에서 새로운 데이터셋을 생성하는 연산이며, 액션(actions)은 데이터셋에 대한 계산을 실행한 후 드라이버 프로그램에 값을 반환합니다.
+예를 들어, map은 각 데이터셋 요소를 함수를 통해 전달하고 결과를 나타내는 새로운 RDD를 반환하는 변환입니다. 
+반면에, reduce는 RDD의 모든 요소를 어떤 함수를 사용하여 집계하고 최종 결과를 드라이버 프로그램에 반환하는 액션입니다(분산 데이터셋을 반환하는 parallel reduceByKey도 있습니다).
+
+Spark에서의 모든 변환은 지연(lazy) 방식으로 실행되어 결과를 즉시 계산하지 않습니다. 대신, 기본 데이터셋(예: 파일)에 적용된 변환을 기억합니다. 액션이 결과를 드라이버 프로그램에 반환해야 할 때만 변환들이 계산됩니다. 이 설계는 Spark가 더 효율적으로 실행될 수 있도록 합니다. 예를 들어, map을 통해 생성된 데이터셋이 reduce에서 사용될 것임을 인식하고, 큰 매핑된 데이터셋이 아닌 reduce의 결과만을 드라이버에 반환할 수 있습니다.
+
+기본적으로 각 변환된 RDD는 해당 RDD에 액션을 실행할 때마다 다시 계산될 수 있습니다. 
+그러나 persist(또는 cache) 메서드를 사용하여 RDD를 메모리에 유지할 수도 있으며, 이 경우 Spark는 클러스터에서 요소를 계속 유지하여 다음 번에 더 빠른 액세스를 제공합니다.
+RDD를 디스크에 지속적으로 저장하거나 여러 노드에 복제하는 기능도 지원됩니다.
+RDD는 불변성(Immutable)을 가지며, 여러 노드에 분산되어 저장되는 분산 컬렉션입니다.
+RDD는 Spark의 핵심 데이터 모델로 사용되며, 다양한 연산을 지원하여 데이터 처리 및 분석 작업을 수행할 수 있습니다.
+
+RDD의 주요 특징과 동작 방식은 다음과 같습니다:
+
+불변성(Immutable): RDD는 변경할 수 없는 데이터 구조입니다. RDD는 생성된 후에는 수정할 수 없으며, 새로운 RDD를 생성하여 변환 작업을 수행합니다. 이는 데이터의 일관성과 안정성을 보장합니다.
+
+분산성(Distributed): RDD는 여러 개의 노드에 분산하여 저장되는 데이터 구조입니다. RDD는 클러스터의 여러 노드에 분할되어 저장되며, 각 노드에서 동시에 처리될 수 있습니다.
+
+탄력성(Resilient): RDD는 데이터의 손실을 방지하기 위해 장애에 대처할 수 있는 기능을 가지고 있습니다. RDD는 특정 노드에서 실패하더라도 다른 노드에서 재계산이 가능하므로 데이터의 내구성을 보장합니다.
+
+지연 평가(Lazy Evaluation): RDD는 지연 평가(Lazy Evaluation) 방식을 사용하여 연산을 지연시킵니다. RDD에 연산을 수행해도 결과가 즉시 계산되지 않고, 실제로 데이터가 필요한 시점에서만 연산이 수행됩니다. 
+이를 통해 최적화된 실행 계획을 수립하고 연산 성능을 향상시킬 수 있습니다.
+
+RDD는 다양한 연산을 지원하여 데이터 처리를 유연하게 수행할 수 있습니다. 주요 RDD 연산에는 변환 연산(Transformations)과 액션 연산(Actions)이 있습니다.
+
+변환 연산(Transformations): RDD를 변형하여 새로운 RDD를 생성하는 연산입니다. 예를 들어, map, filter, reduceByKey 등의 연산을 사용하여 RDD의 요소를 변환, 필터링하거나 그룹화할 수 있습니다.
+
+액션 연산(Actions): RDD에서 결과 값을 반환하는 연산입니다. 예를 들어, count, collect, reduce 등의 연산을 사용하여 RDD의 요소를 계산하거나 수집할 수 있습니다.
+
+RDD는 Spark의 다른 고수준 API인 DataFrame과 Dataset으로 변환될 수 있으며, 더 직관적이고 효율적인 데이터 조작을 위해 사용될 수 있습니다.
+
+따라서, Spark RDD는 분산되고 탄력적이며, 다양한 변환과 액션 연산을 지원하는 기본적인 데이터 구조로 사용되는 중요한 개념입니다.
