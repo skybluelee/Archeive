@@ -37,35 +37,37 @@ SparkContext의 `textFile` 메서드를 사용하여 텍스트 파일 RDD를 생
 생성된 후에 distFile은 데이터셋 연산으로 처리할 수 있다. 
 예를 들어, `distFile.map(lambda s: len(s)).reduce(lambda a, b: a + b)`를 사용하여 `map`과 `reduce`를 사용하는 모든 라인의 크기를 사용하여 합할 수 있다.
 
-Spark에서 파일을 읽는 데 대한 몇 가지 주의점:
+Spark에서 파일을 읽는 데 대한 몇 가지 주의점.
 - 로컬 파일 시스템의 경로를 사용하는 경우, 해당 파일은 워커 노드의 동일한 경로에서도 접근 가능해야 한다. 그렇지 않으면 모든 워커에 파일을 복사하거나 네트워크로 마운트된 공유 파일 시스템을 사용해야 한다.
-- textFile을 포함한 Spark의 모든 파일 기반 입력 방법은 디렉터리, 압축된 파일, 와일드카드도 지원합니다. 예를 들면, textFile("/my/directory"), textFile("/my/directory/*.txt"), textFile("/my/directory/*.gz") 등을 사용할 수 있습니다.
+- textFile을 포함한 Spark의 모든 파일 기반 입력 메서드는 디렉터리, 압축된 파일, 와일드카드도 지원한다. 예를 들면, `textFile("/my/directory")`, `textFile("/my/directory/*.txt")`, `textFile("/my/directory/*.gz")` 등을 사용할 수 있다.
+- textFile 메서드는 파일의 파티션 수를 제어하기 위한 선택적(optional) 두 번째 인자를 사용합니다. 기본적으로 Spark는 파일의 각 블록(기본적으로 HDFS에서는 128MB)에 대해 하나의 파티션을 생성합니다. 그러나 더 큰 값으로 전달하여 더 많은 파티션을 요청할 수도 있다. 블록보다 적은 파티션을 가질 수는 없다.
 
-- textFile 메서드는 파일의 파티션 수를 제어하기 위한 선택적 두 번째 인수도 사용합니다. 기본적으로 Spark는 파일의 각 블록(기본적으로 HDFS에서는 128MB)에 대해 하나의 파티션을 생성합니다. 그러나 더 큰 값으로 전달하여 더 많은 파티션을 요청할 수도 있습니다. 블록보다 적은 파티션을 가질 수 없음을 유의하세요.
-
-텍스트 파일 외에도 Spark의 Python API는 여러 다른 데이터 형식을 지원합니다:
-
-- SparkContext.wholeTextFiles는 여러 작은 텍스트 파일을 포함하는 디렉터리를 읽고, 각각을 (파일 이름, 내용) 쌍으로 반환합니다. 이것은 textFile과 대조적으로 각 파일의 각 라인마다 하나의 레코드를 반환합니다.
-
-- RDD.saveAsPickleFile 및 SparkContext.pickleFile은 pickle Python 객체로 구성된 간단한 형식으로 RDD를 저장하는 것을 지원합니다. pickle 직렬화에서는 기본 배치 크기 10을 사용합니다.
-
+텍스트 파일 외에도 Spark의 Python API는 여러 다른 데이터 형식을 지원한다.
+- `SparkContext.wholeTextFiles`는 여러 작은 텍스트 파일을 포함하는 디렉터리를 읽고, 각각을 (파일 이름, 내용) 쌍으로 반환한다. 이것은 각 파일의 1줄당 1개의 레코드를 반환하는 `textFile`과 대조적이다.
+- `RDD.saveAsPickleFile` 및 `SparkContext.pickleFile`은 pickle Python 객체로 구성된 간단한 형식으로 RDD를 저장하는 것을 지원한다. pickle 직렬화에서는 배치(batching)가 사용되고, 기본 배치 크기는 10이다.
 - SequenceFile 및 Hadoop Input/Output Formats
 
-이 기능은 현재 실험적으로 표시되어 있으며, 고급 사용자를 위해 설계되었습니다. Spark SQL을 기반으로 한 읽기/쓰기 지원으로 대체될 수 있으며, 이 경우 Spark SQL이 선호되는 접근 방식입니다.
+주의 - 이 기능은 현재 실험적으로 표시되어 있으며, 고급 사용자를 위해 설계되었다. 해당 기능은 Spark SQL이 선호되는 접근 방식인 Spark SQL을 기반으로 한 읽기/쓰기 지원으로 대체될 수 있다.
 
-All of Spark’s file-based input methods, including textFile, support running on directories, compressed files, and wildcards as well. For example, you can use textFile("/my/directory"), textFile("/my/directory/*.txt"), and textFile("/my/directory/*.gz").
+## Writable Support
+PySpark의 SequenceFile 지원은 Java 내에서 키-값 쌍의 RDD를 로드하고, Writables를 기본 Java 타입으로 변환하며, 그 결과로 나온 Java 객체들을 pickle을 사용하여 pickle한다.
+키-값 쌍의 RDD를 SequenceFile에 저장할 때, PySpark는 반대로 동작합니다. 
+Python 객체를 Java 객체로 unpickle하고, 그 다음에 이를 Writables로 변환한다.
+다음과 같은 Writables는 자동으로 변환된다.
 
-The textFile method also takes an optional second argument for controlling the number of partitions of the file. By default, Spark creates one partition for each block of the file (blocks being 128MB by default in HDFS), but you can also ask for a higher number of partitions by passing a larger value. Note that you cannot have fewer partitions than blocks.
+|Writable Type|Python Type|
+|-------------|-----------|
+|Text|str|
+|IntWritable|int|
+|FloatWritable|float|
+|DoubleWritable|float|
+|BooleanWritable|bool|
+|BytesWritable|bytearray|
+|NullWritable|None|
+|MapWritable|dict|
 
-Apart from text files, Spark’s Python API also supports several other data formats:
+> pickle: Python에서 제공하는 직렬화 프로토콜이다. 직렬화(serialization)는 객체의 상태나 데이터를 저장하거나 전송 가능한 형식으로 변환하는 프로세스를 의미하며, pickle은 Python 객체를 바이트 스트림으로 변환하는 데 사용되고, 이 바이트 스트림은 나중에 원래의 객체로 복원될 수 있다.
 
-SparkContext.wholeTextFiles lets you read a directory containing multiple small text files, and returns each of them as (filename, content) pairs. This is in contrast with textFile, which would return one record per line in each file.
-
-RDD.saveAsPickleFile and SparkContext.pickleFile support saving an RDD in a simple format consisting of pickled Python objects. Batching is used on pickle serialization, with default batch size 10.
-
-SequenceFile and Hadoop Input/Output Formats
-
-Note this feature is currently marked Experimental and is intended for advanced users. It may be replaced in future with read/write support based on Spark SQL, in which case Spark SQL is the preferred approach.
 
 RDD는 두 가지 유형의 연산을 지원합니다: 변환(transformations)은 기존 데이터셋에서 새로운 데이터셋을 생성하는 연산이며, 액션(actions)은 데이터셋에 대한 계산을 실행한 후 드라이버 프로그램에 값을 반환합니다.
 예를 들어, map은 각 데이터셋 요소를 함수를 통해 전달하고 결과를 나타내는 새로운 RDD를 반환하는 변환입니다. 
