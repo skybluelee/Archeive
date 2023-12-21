@@ -1,4 +1,4 @@
-해당 문서는 [RDD Programming Guide](https://spark.apache.org/docs/latest/rdd-programming-guide.html#resilient-distributed-datasets-rdds)를 바탕으로 작성하였다.
+해당 문서는 [RDD Programming Guide](https://spark.apache.org/docs/latest/rdd-programming-guide.html)를 바탕으로 작성하였다.
 # RDD
 Spark는 RDD(Resilient Distributed Dataset)라는 개념을 중심으로 동작한다. 
 RDD는 Spark에서 데이터를 나타내는 기본 추상화 방식으로, 병렬로 작동할 수 있는 요소들의 장애 허용(fault-tolerant) 컬렉션이다. 
@@ -195,6 +195,102 @@ def doStuff(self, rdd):
 이 문제를 피하기 위한 가장 간단한 방법은 외부적으로 접근하는 대신 필드를 로컬 변수로 복사하는 것이다.
 
 ## Understanding closures
+Spark에서 어려운 부분 중 하나는 클러스터 전체에서 코드를 실행할 때 변수와 메서드의 범위와 생명 주기를 이해하는 것이다.
+범위 밖의 변수를 수정하는 RDD 작업은 종종 혼란의 원인이 될 수 있다. 
+아래 예제에서는 `foreach()`를 사용하여 카운터를 증가시키는 코드로, 위에서 언급한 문제가 발생할 수 있다.
+
+### Example
+```
+counter = 0
+rdd = sc.parallelize(data)
+
+# Wrong: Don't do this!!
+def increment_counter(x):
+    global counter
+    counter += x
+rdd.foreach(increment_counter)
+
+print("Counter value: ", counter)
+```
+단순한 RDD 요소의 합을 구하는 것을 생각해보라. 이는 실행이 동일한 JVM 내에서 이루어지는지 여부에 따라 다르게 작동할 수 있다. 
+이러한 일반적인 예는 Spark를 `local mode (--master = local[n])`에서 실행할 때와 Spark 애플리케이션을 클러스터에 배포할 때 (예: spark-submit을 통해 YARN으로 배포)의 경우이다.
+
+### Local vs. cluster modes
+위의 코드의 동작은 정의되어 있지 않으며, 의도한 대로 작동하지 않을 수 있다.
+job을 실행하기 위해, Spark는 RDD 작업의 처리를 task로 분할하여 실행하는데, 각 task는 executor에 의해 실행된다.
+실행 전에 Spark는 task의 closure를 계산한다.
+closure는 executor가 RDD에서 (이 경우 `foreach()`에서) 계산을 수행하기 위해 볼 수 있어야 하는 변수와 메서드이다.
+이 클로저는 직렬화되어 각 executor에게 전송된다.
+
+각 executor에 전송된 closure 내의 변수는 이제 복사본이므로, `foreach` 함수 내에서 counter가 참조될 때 드라이버 노드의 counter가 아니다.
+드라이버 노드의 메모리에는 여전히 counter가 있지만, 이것은 더 이상 executor에게 보이지 않는다!
+익스큐터는 직렬화된 closure에서의 복사본만 볼 수 있다. 
+따라서 counter의 최종 값은 counter에 대한 모든 작업은 직렬화된 closure 내의 값에 대한 참조를 했기 때문에 여전히 0이 된다.
+
+로컬 모드에서는 일부 상황에서 `foreach` 함수가 실제로 드라이버와 동일한 JVM 내에서 실행되어 원래의 counter를 참조하고 실제로 업데이트할 수 있다.
+
+이러한 시나리오에서 명확하게 정의된 동작을 보장하기 위해 Accumulator를 사용해야 한다.
+Spark의 Accumulator는 클러스터의 워커 노드 간에 실행이 분할될 때 변수를 안전하게 업데이트하는 메커니즘을 제공하기 위해 특별히 사용된다.
+이 가이드의 Accumulators 섹션에서 이에 대해 더 자세히 다룬다.
+
+일반적으로 클로저 - 루프나 로컬로 정의된 메서드와 같은 consturct(생성자)는 전역 상태를 변경하는 데 사용되어서는 안 된다.
+Spark는 closures 외부에서 참조된 객체의 변이 동작을 정의하거나 보장하지 않는다.
+이렇게 하는 코드는 로컬 모드에서 작동할 수 있지만, 그것은 우연에 불과하며, 이러한 코드는 분산 모드에서 예상대로 동작하지 않을 것이다.
+전역 집계가 필요한 경우 Accumulator를 사용하라.
+
+### Printing elements of an RDD
+또 다른 흔한 사용법은 `rdd.foreach(println)` 또는 `rdd.map(println)`을 사용하여 RDD의 요소를 출력하는 것이다.
+단일 머신에서는 이를 통해 예상된 출력이 생성되며 RDD의 모든 요소가 출력된다.
+그러나 클러스터 모드에서는 executor에 의해 호출되는 stdout 출력이 이제 드라이버가 아닌 executor의 stdout에 작성되므로, 드라이버의 stdout에는 이러한 출력이 표시되지 않는다!
+드라이버에서 모든 요소를 출력하려면 RDD를 먼저 드라이버 노드로 가져오기 위해 collect() 메서드를 사용해야 한다.
+따라서 다음과 같이 작성할 수 있다: `rdd.collect().foreach(println)`.
+그러나 `collect()`는 RDD 전체를 단일 머신으로 가져오기 때문에 드라이버의 메모리가 부족할 수 있다. 
+RDD의 몇몇 요소만 출력해야 하는 경우 take()를 사용하는 것이 더 안전한 접근 방식입니다: `rdd.take(100).foreach(println)`.
+
+## Working with Key-Value Pairs
+대부분의 Spark 작업은 어떤 유형의 객체를 포함하는 RDD에서 작동하지만, 특정 특별한 작업은 키-값 쌍의 RDD에서만 사용할 수 있다. 
+가장 일반적인 것은 키를 기준으로 요소를 그룹화하거나 집계하는 것과 같은 분산 "셔플" 작업이다.
+
+Python에서는 이러한 작업이 (1, 2)와 같은 내장 Python 튜플을 포함하는 RDD에서 작동한다.
+간단히 이러한 튜플을 생성한 후 원하는 작업을 호출하면 된다.
+
+```
+lines = sc.textFile("data.txt")
+pairs = lines.map(lambda s: (s, 1))
+counts = pairs.reduceByKey(lambda a, b: a + b)
+```
+예를 들어, 위 코드는 키-값 쌍에서 `reduceByKey` 작업을 사용하여 파일의 각 텍스트 라인이 발생하는 빈도를 카운트한다.
+
+우리는 또한 `counts.sortByKey()`와 같이 키를 기준으로 쌍을 알파벳순으로 정렬하고, 마지막으로 `counts.collect()`를 사용하여 그들을 객체의 목록으로 드라이버 프로그램으로 다시 가져올 수 있다.
+
+## Transformations
+다음 표는 Spark에서 지원하는 일반적인 transformation 연산 몇 가지를 나열한다. 자세한 내용은 RDD API 문서 ([Scala](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/rdd/RDD.html), [Java](https://spark.apache.org/docs/latest/api/java/index.html?org/apache/spark/api/java/JavaRDD.html), [Python](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.RDD.html#pyspark.RDD), [R](https://spark.apache.org/docs/latest/api/R/reference/index.html))와 페어 RDD 함수 문서 ([Scala](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/rdd/PairRDDFunctions.html), [Java](https://spark.apache.org/docs/latest/api/java/index.html?org/apache/spark/api/java/JavaPairRDD.html))를 참조하라.
+
+|Transformation|Meaning|
+|------------|-----------|
+|map(_func_)|소스의 각 요소를 함수 func를 통과시켜 형성된 새로운 분산 데이터셋을 반환합니다.Return a new distributed dataset formed by passing each element of the source through a function func.
+|filter(_func_)|Return a new dataset formed by selecting those elements of the source on which func returns true.
+|flatMap(_func_)|Similar to map, but each input item can be mapped to 0 or more output items (so func should return a Seq rather than a single item).
+|mapPartitions(_func_)|Similar to map, but runs separately on each partition (block) of the RDD, so func must be of type Iterator<T> => Iterator<U> when running on an RDD of type T.
+|mapPartitionsWithIndex(_func_)|Similar to mapPartitions, but also provides func with an integer value representing the index of the partition, so func must be of type (Int, Iterator<T>) => Iterator<U> when running on an RDD of type T.
+|sample(_withReplacement, fraction, seed_)|Sample a fraction fraction of the data, with or without replacement, using a given random number generator seed.
+|union(_otherDataset_)|Return a new dataset that contains the union of the elements in the source dataset and the argument.
+|intersection(_otherDataset_)|Return a new RDD that contains the intersection of elements in the source dataset and the argument.
+|distinct([_numPartitions_]))|Return a new dataset that contains the distinct elements of the source dataset.
+|groupByKey([_numPartitions_])|When called on a dataset of (K, V) pairs, returns a dataset of (K, Iterable<V>) pairs.
+Note: If you are grouping in order to perform an aggregation (such as a sum or average) over each key, using reduceByKey or aggregateByKey will yield much better performance.
+Note: By default, the level of parallelism in the output depends on the number of partitions of the parent RDD. You can pass an optional numPartitions argument to set a different number of tasks.
+|reduceByKey(_func_, [_numPartitions_])|When called on a dataset of (K, V) pairs, returns a dataset of (K, V) pairs where the values for each key are aggregated using the given reduce function func, which must be of type (V,V) => V. Like in groupByKey, the number of reduce tasks is configurable through an optional second argument.
+|aggregateByKey(zeroValue)(_seqOp_, _combOp_, [_numPartitions_])|When called on a dataset of (K, V) pairs, returns a dataset of (K, U) pairs where the values for each key are aggregated using the given combine functions and a neutral "zero" value. Allows an aggregated value type that is different than the input value type, while avoiding unnecessary allocations. Like in groupByKey, the number of reduce tasks is configurable through an optional second argument.
+|sortByKey([_ascending_], [_numPartitions_])|When called on a dataset of (K, V) pairs where K implements Ordered, returns a dataset of (K, V) pairs sorted by keys in ascending or descending order, as specified in the boolean ascending argument.
+|join(otherDataset, [_numPartitions_])|When called on datasets of type (K, V) and (K, W), returns a dataset of (K, (V, W)) pairs with all pairs of elements for each key. Outer joins are supported through leftOuterJoin, rightOuterJoin, and fullOuterJoin.
+|cogroup(_otherDataset_, [_numPartitions_])|When called on datasets of type (K, V) and (K, W), returns a dataset of (K, (Iterable<V>, Iterable<W>)) tuples. This operation is also called groupWith.
+|cartesian(_otherDataset_)|When called on datasets of types T and U, returns a dataset of (T, U) pairs (all pairs of elements).
+|pipe(command, [_envVars_])|Pipe each partition of the RDD through a shell command, e.g. a Perl or bash script. RDD elements are written to the process's stdin and lines output to its stdout are returned as an RDD of strings.
+|coalesce(_numPartitions_)|Decrease the number of partitions in the RDD to numPartitions. Useful for running operations more efficiently after filtering down a large dataset.
+|repartition(_numPartitions_)|Reshuffle the data in the RDD randomly to create either more or fewer partitions and balance it across them. This always shuffles all data over the network.
+|repartitionAndSortWithinPartitions(_partitioner_)|Repartition the RDD according to the given partitioner and, within each resulting partition, sort records by their keys. This is more efficient than calling repartition and then sorting within each partition because it can push the sorting down into the shuffle machinery.
+
 
 
 # ㅊ디ㅐㅎ
