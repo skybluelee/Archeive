@@ -268,28 +268,28 @@ counts = pairs.reduceByKey(lambda a, b: a + b)
 
 |Transformation|Meaning|
 |------------|-----------|
-|map(_func_)|소스의 각 요소를 함수 func를 통과시켜 형성된 새로운 분산 데이터셋을 반환합니다.Return a new distributed dataset formed by passing each element of the source through a function func.
-|filter(_func_)|Return a new dataset formed by selecting those elements of the source on which func returns true.
-|flatMap(_func_)|Similar to map, but each input item can be mapped to 0 or more output items (so func should return a Seq rather than a single item).
-|mapPartitions(_func_)|Similar to map, but runs separately on each partition (block) of the RDD, so func must be of type Iterator<T> => Iterator<U> when running on an RDD of type T.
-|mapPartitionsWithIndex(_func_)|Similar to mapPartitions, but also provides func with an integer value representing the index of the partition, so func must be of type (Int, Iterator<T>) => Iterator<U> when running on an RDD of type T.
-|sample(_withReplacement, fraction, seed_)|Sample a fraction fraction of the data, with or without replacement, using a given random number generator seed.
-|union(_otherDataset_)|Return a new dataset that contains the union of the elements in the source dataset and the argument.
-|intersection(_otherDataset_)|Return a new RDD that contains the intersection of elements in the source dataset and the argument.
-|distinct([_numPartitions_]))|Return a new dataset that contains the distinct elements of the source dataset.
-|groupByKey([_numPartitions_])|When called on a dataset of (K, V) pairs, returns a dataset of (K, Iterable<V>) pairs.
+|map(_func_)|소스의 각 요소를 함수 func를 통과시켜 생성한 새로운 분산 데이터셋을 반환한다.|
+|filter(_func_)|원본 데이터셋에서 func 함수가 true를 반환하는 요소들만 선택하여 생성한 새로운 데이터셋을 반환한다.|
+|flatMap(_func_)|map과 유사하지만 각 입력 항목은 0개 또는 그 이상의 출력 항목으로 매핑될 수 있다 (따라서 func는 단일 항목 대신에 Seq(시퀀스)를 반환해야 한다).|
+|mapPartitions(_func_)|map과 유사하지만, 각 파티션(블록)에 독립적으로 실행된다. 따라서 func는  Iterator<T> => Iterator<U> 유형이어야 한다.|
+|mapPartitionsWithIndex(_func_)|mapPartitions와 유사하지만, 파티션의 인덱스 정보도 제공된다. func는 T 타입의 RDD를 실행할 때 (Int, Iterator<T>) => Iterator<U> 유형이어야 한다.|
+|sample(_withReplacement, fraction, seed_)|주어진 비율로 데이터의 샘플을 추출합니다.Sample a fraction fraction of the data, with or without replacement, using a given random number generator seed.
+|union(_otherDataset_)|두 데이터셋의 요소들의 합집합을 반환합니다.Return a new dataset that contains the union of the elements in the source dataset and the argument.
+|intersection(_otherDataset_)|두 데이터셋의 요소들의 교집합을 반환합니다.Return a new RDD that contains the intersection of elements in the source dataset and the argument.
+|distinct([_numPartitions_]))|중복되지 않는 요소들로 이루어진 새로운 데이터셋을 반환합니다.Return a new dataset that contains the distinct elements of the source dataset.
+|groupByKey([_numPartitions_])|키(K)에 따라 값(V)들을 그룹화합니다. 주의: 집계 작업을 위해 사용한다면, reduceByKey나 aggregateByKey를 사용하는 것이 성능이 더 좋습니다.When called on a dataset of (K, V) pairs, returns a dataset of (K, Iterable<V>) pairs.
 Note: If you are grouping in order to perform an aggregation (such as a sum or average) over each key, using reduceByKey or aggregateByKey will yield much better performance.
 Note: By default, the level of parallelism in the output depends on the number of partitions of the parent RDD. You can pass an optional numPartitions argument to set a different number of tasks.
-|reduceByKey(_func_, [_numPartitions_])|When called on a dataset of (K, V) pairs, returns a dataset of (K, V) pairs where the values for each key are aggregated using the given reduce function func, which must be of type (V,V) => V. Like in groupByKey, the number of reduce tasks is configurable through an optional second argument.
-|aggregateByKey(zeroValue)(_seqOp_, _combOp_, [_numPartitions_])|When called on a dataset of (K, V) pairs, returns a dataset of (K, U) pairs where the values for each key are aggregated using the given combine functions and a neutral "zero" value. Allows an aggregated value type that is different than the input value type, while avoiding unnecessary allocations. Like in groupByKey, the number of reduce tasks is configurable through an optional second argument.
-|sortByKey([_ascending_], [_numPartitions_])|When called on a dataset of (K, V) pairs where K implements Ordered, returns a dataset of (K, V) pairs sorted by keys in ascending or descending order, as specified in the boolean ascending argument.
-|join(otherDataset, [_numPartitions_])|When called on datasets of type (K, V) and (K, W), returns a dataset of (K, (V, W)) pairs with all pairs of elements for each key. Outer joins are supported through leftOuterJoin, rightOuterJoin, and fullOuterJoin.
-|cogroup(_otherDataset_, [_numPartitions_])|When called on datasets of type (K, V) and (K, W), returns a dataset of (K, (Iterable<V>, Iterable<W>)) tuples. This operation is also called groupWith.
-|cartesian(_otherDataset_)|When called on datasets of types T and U, returns a dataset of (T, U) pairs (all pairs of elements).
-|pipe(command, [_envVars_])|Pipe each partition of the RDD through a shell command, e.g. a Perl or bash script. RDD elements are written to the process's stdin and lines output to its stdout are returned as an RDD of strings.
-|coalesce(_numPartitions_)|Decrease the number of partitions in the RDD to numPartitions. Useful for running operations more efficiently after filtering down a large dataset.
-|repartition(_numPartitions_)|Reshuffle the data in the RDD randomly to create either more or fewer partitions and balance it across them. This always shuffles all data over the network.
-|repartitionAndSortWithinPartitions(_partitioner_)|Repartition the RDD according to the given partitioner and, within each resulting partition, sort records by their keys. This is more efficient than calling repartition and then sorting within each partition because it can push the sorting down into the shuffle machinery.
+|reduceByKey(_func_, [_numPartitions_])|동일한 키에 대한 값들을 주어진 함수로 집계합니다.When called on a dataset of (K, V) pairs, returns a dataset of (K, V) pairs where the values for each key are aggregated using the given reduce function func, which must be of type (V,V) => V. Like in groupByKey, the number of reduce tasks is configurable through an optional second argument.
+|aggregateByKey(zeroValue)(_seqOp_, _combOp_, [_numPartitions_])|키별 값들을 주어진 함수들로 집계하되, 중간 결과값과 최종 결과값의 타입이 다를 수 있습니다.When called on a dataset of (K, V) pairs, returns a dataset of (K, U) pairs where the values for each key are aggregated using the given combine functions and a neutral "zero" value. Allows an aggregated value type that is different than the input value type, while avoiding unnecessary allocations. Like in groupByKey, the number of reduce tasks is configurable through an optional second argument.
+|sortByKey([_ascending_], [_numPartitions_])|키를 기준으로 데이터를 정렬합니다.When called on a dataset of (K, V) pairs where K implements Ordered, returns a dataset of (K, V) pairs sorted by keys in ascending or descending order, as specified in the boolean ascending argument.
+|join(otherDataset, [_numPartitions_])|두 데이터셋을 키(K)에 따라 조인합니다.When called on datasets of type (K, V) and (K, W), returns a dataset of (K, (V, W)) pairs with all pairs of elements for each key. Outer joins are supported through leftOuterJoin, rightOuterJoin, and fullOuterJoin.
+|cogroup(_otherDataset_, [_numPartitions_])|두 데이터셋의 값을 키에 따라 그룹화합니다.When called on datasets of type (K, V) and (K, W), returns a dataset of (K, (Iterable<V>, Iterable<W>)) tuples. This operation is also called groupWith.
+|cartesian(_otherDataset_)|두 데이터셋의 모든 요소 쌍을 반환합니다.When called on datasets of types T and U, returns a dataset of (T, U) pairs (all pairs of elements).
+|pipe(command, [_envVars_])| RDD의 각 파티션을 쉘 명령어를 통해 처리합니다.Pipe each partition of the RDD through a shell command, e.g. a Perl or bash script. RDD elements are written to the process's stdin and lines output to its stdout are returned as an RDD of strings.
+|coalesce(_numPartitions_)|파티션 수를 줄입니다.Decrease the number of partitions in the RDD to numPartitions. Useful for running operations more efficiently after filtering down a large dataset.
+|repartition(_numPartitions_)|데이터를 무작위로 재분배하여 파티션 수를 변경합니다.Reshuffle the data in the RDD randomly to create either more or fewer partitions and balance it across them. This always shuffles all data over the network.
+|repartitionAndSortWithinPartitions(_partitioner_)|주어진 파티셔너에 따라 RDD를 재분배하고, 각 파티션 내에서 키에 따라 정렬합니다.Repartition the RDD according to the given partitioner and, within each resulting partition, sort records by their keys. This is more efficient than calling repartition and then sorting within each partition because it can push the sorting down into the shuffle machinery.
 
 
 
