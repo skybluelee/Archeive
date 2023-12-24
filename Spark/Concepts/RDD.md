@@ -5,7 +5,7 @@ RDD는 Spark에서 데이터를 나타내는 기본 추상화 방식으로, 병�
 RDD를 생성하는 방법으로는
 기존의 컬렉션을 드라이버 프로그램에서 병렬화하는 방법 또는 공유 파일 시스템, HDFS, HBase 또는 Hadoop InputFormat을 제공하는 기타 데이터 소스와 같은 외부 저장 시스템에서 데이터셋을 참조하는 방법 2가지가 존재한다.
 
-# 병렬 컬렉션(Parallelized Collections)
+## 병렬 컬렉션(Parallelized Collections)
 병렬 컬렉션은 드라이버 프로그램 내의 기존 반복 가능한(iterable) 객체나 컬렉션에 SparkContext의 `parallelize`  메서드를 호출하여 생성된다.
 컬렉션의 요소들은 병렬로 작동할 수 있는 분산 데이터셋을 형성하기 위해 복사된다.
 예를 들어, 숫자 1부터 5까지를 포함하는 병렬 컬렉션을 생성하는 방법은 다음과 같다.
@@ -24,7 +24,7 @@ Spark는 클러스터의 각 파티션에 대해 하나의 task를 실행한다.
 그러나, `parallelize`의 두 번째 파라미터로 전달하여 수동으로 설정할 수 있다 (예: `sc.parallelize(data, 10)`). 
 참고: 코드의 일부 위치에서는 역호환성을 유지하기 위해 파티션의 동의어인 slices라는 용어를 사용함.
 
-# 외부 데이터셋
+## 외부 데이터셋
 PySpark는 Hadoop에서 지원하는 모든 저장소 소스(로컬 파일 시스템, HDFS, Cassandra, HBase, Amazon S3)에서 분산 데이터셋을 생성할 수 있다.
 Spark는 텍스트 파일, SequenceFiles 및 Hadoop InputFormat의 다른 파일 형식을 지원한다.
 
@@ -49,7 +49,7 @@ Spark에서 파일을 읽는 데 대한 몇 가지 주의점.
 
 주의 - 이 기능은 현재 실험적으로 표시되어 있으며, 고급 사용자를 위해 설계되었다. 해당 기능은 Spark SQL이 선호되는 접근 방식인 Spark SQL을 기반으로 한 읽기/쓰기 지원으로 대체될 수 있다.
 
-## Writable Support
+### Writable Support
 PySpark의 SequenceFile 지원은 Java 내에서 키-값 쌍의 RDD를 로드하고, Writables를 기본 Java 타입으로 변환하며, 그 결과로 나온 Java 객체들을 pickle을 사용하여 pickle한다.
 키-값 쌍의 RDD를 SequenceFile에 저장할 때, PySpark는 반대로 동작합니다. 
 Python 객체를 Java 객체로 unpickle하고, 그 다음에 이를 Writables로 변환한다.
@@ -74,7 +74,7 @@ Python 객체를 Java 객체로 unpickle하고, 그 다음에 이를 Writables�
 읽기 시에는 기본 변환기가 사용자 정의 `ArrayWritable` 하위 타입을 `Java Object[]`로 변환하며, 이 후에 Python 튜플로 pickle된다.
 원시 타입의 배열에 대한 Python `array.array`를 얻으려면 사용자들은 사용자 정의 변환기를 명시적으로 지정해야 한다.
 
-## Saving and Loading SequenceFiles
+### Saving and Loading SequenceFiles
 ```
 >>> rdd = sc.parallelize(range(1, 4)).map(lambda x: (x, "a" * x))
 >>> rdd.saveAsSequenceFile("path/to/file")
@@ -84,7 +84,7 @@ Python 객체를 Java 객체로 unpickle하고, 그 다음에 이를 Writables�
 텍스트 파일과 마찬가지로, SequenceFiles는 경로를 지정하여 저장하고 로드할 수 있다. 
 키와 값 클래스는 지정할 수 있지만, 표준 Writables의 경우 이는 필수가 아니다.
 
-## Saving and Loading Other Hadoop Input/Output Formats
+### Saving and Loading Other Hadoop Input/Output Formats
 PySpark는 'new' 그리고 'old' Hadoop MapReduce API 모두에 대해 어떤 Hadoop InputFormat을 읽거나 어떤 Hadoop OutputFormat을 작성할 수 있다.
 필요한 경우, Hadoop 구성을 Python 딕셔너리로 전달할 수 있다.
 Elasticsearch ESInputFormat을 사용한 예시는 다음과 같다.
@@ -110,7 +110,7 @@ Cassandra나 HBase에서 데이터를 로드하는 경우와 같이 사용자 �
 
 Cassandra / HBase `InputFormat` 및 `OutputFormat`을 사용하는 사용자 정의 변환기와 관련한 예제를 보려면 [Python 예제](https://github.com/apache/spark/tree/master/examples/src/main/python)와 [Converter 예제](https://github.com/apache/spark/tree/master/examples/src/main/scala/org/apache/spark/examples/pythonconverters)를 참조하라.
 
-# RDD 연산
+## RDD 연산
 RDDs는 2가지 종류의 연산을 지원한다 - transformation 연산은 기존의 데이터셋에서 새로운 데이터셋을 생성하는 연산이며, action 연산은 데이터셋에 대한 계산을 실행한 후 드라이버 프로그램에 값을 반환한다.
 예를 들면, `map`은 각 데이터셋 요소를 함수를 통해 전달하고 결과를 나타내는 새로운 RDD를 반환하는 transformation 연산이다.
 반면에, `reduce`는 RDD의 모든 요소를 특정 함수를 사용하여 집계하고 최종 결과를 드라이버 프로그램에 반환하는 action 연산이다(물론 분산 데이터셋을 반환하는 parallel `reduceByKey`도 있다).
@@ -126,7 +126,7 @@ action 연산에서 결과를 드라이버 프로그램에 반환해야 할 때�
 그러나 persist(또는 cache) 메서드를 사용하여 RDD를 메모리에 유지할 수도 있으며, 이 경우 Spark는 다음 번에 쿼리할 때 빠른 액세스를 위해 클러스터의 요소를 유지한다. 
 RDD를 디스크에 지속적으로 저장하거나 여러 노드에 복제하는 기능도 지원된다.
 
-## 기초
+### 기초
 ```
 lines = sc.textFile("data.txt")
 lineLengths = lines.map(lambda s: len(s))
@@ -144,7 +144,7 @@ lineLengths.persist()
 `lineLengths`를 나중에 다시 사용하길 원한다면 위 코드를 reduce 이전에 추가하면 된다.
 그렇게 하면 `lineLengths`는 처음 계산된 이후 메모리에 저장된다.
 
-## Passing Functions to Spark
+### Passing Functions to Spark
 Spark의 API는 클러스터에서 실행되기 위해 드라이버 프로그램에서 함수를 전달하는 것을 매우 의존한다.
 이를 수행하는 세 가지 권장 방법이 있다.
 1. 간단한 함수로서 식으로 작성할 수 있는 경우에는 람다 표현식을 사용한다. (람다는 여러 문장 또는 값을 반환하지 않는 문장을 지원하지 않는다.)
@@ -194,12 +194,12 @@ def doStuff(self, rdd):
 ```
 이 문제를 피하기 위한 가장 간단한 방법은 외부적으로 접근하는 대신 필드를 로컬 변수로 복사하는 것이다.
 
-## Understanding closures
+### Understanding closures
 Spark에서 어려운 부분 중 하나는 클러스터 전체에서 코드를 실행할 때 변수와 메서드의 범위와 생명 주기를 이해하는 것이다.
 범위 밖의 변수를 수정하는 RDD 작업은 종종 혼란의 원인이 될 수 있다. 
 아래 예제에서는 `foreach()`를 사용하여 카운터를 증가시키는 코드로, 위에서 언급한 문제가 발생할 수 있다.
 
-### Example
+#### Example
 ```
 counter = 0
 rdd = sc.parallelize(data)
@@ -215,7 +215,7 @@ print("Counter value: ", counter)
 단순한 RDD 요소의 합을 구하는 것을 생각해보라. 이는 실행이 동일한 JVM 내에서 이루어지는지 여부에 따라 다르게 작동할 수 있다. 
 이러한 일반적인 예는 Spark를 `local mode (--master = local[n])`에서 실행할 때와 Spark 애플리케이션을 클러스터에 배포할 때 (예: spark-submit을 통해 YARN으로 배포)의 경우이다.
 
-### Local vs. cluster modes
+#### Local vs. cluster modes
 위의 코드의 동작은 정의되어 있지 않으며, 의도한 대로 작동하지 않을 수 있다.
 job을 실행하기 위해, Spark는 RDD 작업의 처리를 task로 분할하여 실행하는데, 각 task는 executor에 의해 실행된다.
 실행 전에 Spark는 task의 closure를 계산한다.
@@ -238,7 +238,7 @@ Spark는 closures 외부에서 참조된 객체의 변이 동작을 정의하거
 이렇게 하는 코드는 로컬 모드에서 작동할 수 있지만, 그것은 우연에 불과하며, 이러한 코드는 분산 모드에서 예상대로 동작하지 않을 것이다.
 전역 집계가 필요한 경우 Accumulator를 사용하라.
 
-### Printing elements of an RDD
+#### Printing elements of an RDD
 또 다른 흔한 사용법은 `rdd.foreach(println)` 또는 `rdd.map(println)`을 사용하여 RDD의 요소를 출력하는 것이다.
 단일 머신에서는 이를 통해 예상된 출력이 생성되며 RDD의 모든 요소가 출력된다.
 그러나 클러스터 모드에서는 executor에 의해 호출되는 stdout 출력이 이제 드라이버가 아닌 executor의 stdout에 작성되므로, 드라이버의 stdout에는 이러한 출력이 표시되지 않는다!
@@ -247,7 +247,7 @@ Spark는 closures 외부에서 참조된 객체의 변이 동작을 정의하거
 그러나 `collect()`는 RDD 전체를 단일 머신으로 가져오기 때문에 드라이버의 메모리가 부족할 수 있다. 
 RDD의 몇몇 요소만 출력해야 하는 경우 take()를 사용하는 것이 더 안전한 접근 방식입니다: `rdd.take(100).foreach(println)`.
 
-## Working with Key-Value Pairs
+### Working with Key-Value Pairs
 대부분의 Spark 작업은 어떤 유형의 객체를 포함하는 RDD에서 작동하지만, 특정 특별한 작업은 키-값 쌍의 RDD에서만 사용할 수 있다. 
 가장 일반적인 것은 키를 기준으로 요소를 그룹화하거나 집계하는 것과 같은 분산 "셔플" 작업이다.
 
@@ -263,7 +263,7 @@ counts = pairs.reduceByKey(lambda a, b: a + b)
 
 우리는 또한 `counts.sortByKey()`와 같이 키를 기준으로 쌍을 알파벳순으로 정렬하고, 마지막으로 `counts.collect()`를 사용하여 그들을 객체의 목록으로 드라이버 프로그램으로 다시 가져올 수 있다.
 
-## Transformations
+### Transformations
 다음 표는 Spark에서 지원하는 일반적인 transformation 연산 몇 가지를 나열한다. 자세한 내용은 RDD API 문서 ([Scala](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/rdd/RDD.html), [Java](https://spark.apache.org/docs/latest/api/java/index.html?org/apache/spark/api/java/JavaRDD.html), [Python](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.RDD.html#pyspark.RDD), [R](https://spark.apache.org/docs/latest/api/R/reference/index.html))와 페어 RDD 함수 문서 ([Scala](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/rdd/PairRDDFunctions.html), [Java](https://spark.apache.org/docs/latest/api/java/index.html?org/apache/spark/api/java/JavaPairRDD.html))를 참조하라.
 
 |Transformation|Meaning|
@@ -289,7 +289,7 @@ counts = pairs.reduceByKey(lambda a, b: a + b)
 |repartition(_numPartitions_)|RDD의 데이터를 무작위로 다시 배열하여 더 많거나 더 적은 파티션을 생성하고, 그들 사이에서 균형을 맞춘다. 이는 항상 모든 데이터를 네트워크를 통해 재배열한다.|
 |repartitionAndSortWithinPartitions(_partitioner_)|주어진 파티셔너에 따라 RDD를 다시 파티셔닝하고, 각 결과 파티션 내에서 레코드를 키별로 정렬한다. 이는 각 파티션 내에서 repartition을 호출한 후에 정렬하는 것보다 효율적인데, 왜냐하면 이 방식은 정렬 작업을 셔플 기계(machinery)로 넣을 수 있기 때문이다.|
 
-## Actions
+### Actions
 다음 표는 Spark에서 지원하는 일반적인 action 연산 목록을 나열하고 있다. 자세한 내용은 RDD API 문서([Scala](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/rdd/RDD.html), [Java](https://spark.apache.org/docs/latest/api/java/index.html?org/apache/spark/api/java/JavaRDD.html), [Python](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.RDD.html#pyspark.RDD), [R](https://spark.apache.org/docs/latest/api/R/reference/index.html)) 및 pair RDD 함수 문서([Scala](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/rdd/PairRDDFunctions.html), [Java](https://spark.apache.org/docs/latest/api/java/index.html?org/apache/spark/api/java/JavaPairRDD.html))를 참조하라.
 
 |Action|Meaning|
@@ -310,22 +310,47 @@ counts = pairs.reduceByKey(lambda a, b: a + b)
 Spark RDD API는 일부 액션의 비동기 버전도 제공한다. 예를 들면, `foreach`의 비동기 버전인 `foreachAsync`가 있다. `foreachAsync`는 액션의 완료를 기다리는 대신 즉시 호출자에게 `FutureAction`을 반환합니다. 
 이를 사용하여 액션의 비동기 실행을 관리하거나 대기할 수 있다.
 
-## Shuffle operations
-Certain operations within Spark trigger an event known as the shuffle. The shuffle is Spark’s mechanism for re-distributing data so that it’s grouped differently across partitions. This typically involves copying data across executors and machines, making the shuffle a complex and costly operation.
+### Shuffle operations
+Spark에서 특정 연산은 셔플(shuffle)이라는 이벤트를 발생시킨다.
+셔플은 데이터를 재분배하여 다른 파티션으로 그룹화하는 Spark의 메커니즘이다.
+이는 일반적으로 데이터를 executor와 머신 간에 복사하는 것을 포함하여 복잡하고 비용이 많이 드는 작업이다.
 
-### Background
-To understand what happens during the shuffle, we can consider the example of the reduceByKey operation. The reduceByKey operation generates a new RDD where all values for a single key are combined into a tuple - the key and the result of executing a reduce function against all values associated with that key. The challenge is that not all values for a single key necessarily reside on the same partition, or even the same machine, but they must be co-located to compute the result.
+#### Background
+셔플 동안 어떤 일이 발생하는지 이해하기 위해, `reduceByKey` 연산의 예를 살펴볼 수 있다.
+`reduceByKey` 연산은 하나의 키에 대한 모든 값을 튜플로 결합되는 새로운 RDD를 생성한다 - 키와 해당 키에 연결된 모든 값을 사용하여 실행되는 reduce 함수의 결과이다.
+문제는 하나의 키에 대한 모든 값이 동일한 파티션에, 심지어 같은 머신에 있지 않을수도 있으나 결과를 계산하기 위해 값들은 동일한 위치에 있어야 한다는 점이다.
 
-In Spark, data is generally not distributed across partitions to be in the necessary place for a specific operation. During computations, a single task will operate on a single partition - thus, to organize all the data for a single reduceByKey reduce task to execute, Spark needs to perform an all-to-all operation. It must read from all partitions to find all the values for all keys, and then bring together values across partitions to compute the final result for each key - this is called the shuffle.
+Spark에서는 일반적으로 데이터가 특정 연산에 필요한 위치에 위치에 존재하도록 파티션 간에 분산되어 있지 않는다. 
+계산 중에 단일 작업은 단일 파티션에서 작동합니다. 따라서 `reduceByKey` reduce 작업을 실행하기 위해 모든 데이터를 조직화하려면 Spark는 all-to-all 연산을 수행해야 한다. 
+Spark는 모든 키에 대한 모든 값들을 찾기 위해 모든 파티션에서 읽어야 하며, 그런 다음 각 키에 대한 최종 결과를 계산하기 위해 파티션 간의 값들을 모으는 작업을 수행해야 한다 - 이것이 셔플이라고 한다.
 
-Although the set of elements in each partition of newly shuffled data will be deterministic, and so is the ordering of partitions themselves, the ordering of these elements is not. If one desires predictably ordered data following shuffle then it’s possible to use:
+새로 셔플된 데이터의 각 파티션에 있는 요소 집합은 결정론적(과정은 알 수도, 설정할 수도 없음)이며, 파티션 자체의 순서도 결정론적이다. 
+그러나 이러한 요소들의 순서는 그렇지 않다. 
+셔플 후 예측 가능한 순서의 데이터를 원하는 경우 아래 방법을 사용하라.
 
-- mapPartitions to sort each partition using, for example, .sorted
-- repartitionAndSortWithinPartitions to efficiently sort partitions while simultaneously repartitioning
-- sortBy to make a globally ordered RDD
+- 각 파티션을 정렬하기 위해 `mapPartitions`를 사용.
+- 동시에 다시 파티셔닝(repartitioning)하면서 파티션을 효율적으로 정렬하기 위해 `repartitionAndSortWithinPartitions`를 사용.
+- 전역적으로 정렬된 RDD를 만들기 위해 `sortBy`를 사용.
 
-Operations which can cause a shuffle include repartition operations like repartition and coalesce, ‘ByKey operations (except for counting) like groupByKey and reduceByKey, and join operations like cogroup and join.
+셔플을 유발할 수 있는 연산에는 [`repartition`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#RepartitionLink) 및 [`coalesce`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#RepartitionLink)와 같은 **repartition** 연산, [`groupByKey`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#GroupByLink) 및 [`reduceByKey`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#ReduceByLink)와 같은 **ByKey** 연산(카운팅은 제외), [`cogroup`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#CogroupLink) 및 [`join`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#JoinLink)과 같은 **join** 연산이 포함된다.
 
+#### Performance Impact
+셔플은 디스크 I/O, 데이터 직렬화, 네트워크 I/O를 포함하기 때문에 비용이 많이 드는 작업입니다. 셔플을 위해 Spark는 데이터를 조직하기 위한 맵 작업 세트와 데이터를 집계하기 위한 리듀스 작업 세트를 생성합니다. 이 용어는 MapReduce에서 비롯되었으며 Spark의 맵 및 리듀스 연산과 직접적으로 관련되어 있지 않습니다.
+The Shuffle is an expensive operation since it involves disk I/O, data serialization, and network I/O. To organize data for the shuffle, Spark generates sets of tasks - map tasks to organize the data, and a set of reduce tasks to aggregate it. This nomenclature comes from MapReduce and does not directly relate to Spark’s map and reduce operations.
+
+내부적으로, 개별 맵 작업에서의 결과는 메모리에 보관되며 더 이상 저장할 수 없을 때까지 유지됩니다. 그런 다음, 이러한 결과는 대상 파티션을 기준으로 정렬되어 단일 파일로 쓰여집니다. 리듀스 측에서 작업은 관련된 정렬된 블록을 읽습니다.
+Internally, results from individual map tasks are kept in memory until they can’t fit. Then, these are sorted based on the target partition and written to a single file. On the reduce side, tasks read the relevant sorted blocks.
+
+특정 셔플 작업은 기록 전후에 레코드를 조직하기 위해 메모리 내 데이터 구조를 사용하므로 큰 양의 힙 메모리를 소비할 수 있습니다. 구체적으로, reduceByKey 및 aggregateByKey는 맵 측에서 이러한 구조를 생성하며, 'ByKey' 작업은 리듀스 측에서 이를 생성합니다. 데이터가 메모리에 맞지 않으면 Spark는 이러한 테이블을 디스크에 스피릴링(spill)하여 디스크 I/O의 추가 오버헤드와 증가된 가비지 컬렉션 비용을 발생시킵니다.
+Certain shuffle operations can consume significant amounts of heap memory since they employ in-memory data structures to organize records before or after transferring them. Specifically, reduceByKey and aggregateByKey create these structures on the map side, and 'ByKey operations generate these on the reduce side. When data does not fit in memory Spark will spill these tables to disk, incurring the additional overhead of disk I/O and increased garbage collection.
+
+셔플은 또한 디스크에 많은 수의 중간 파일을 생성합니다. Spark 1.3부터는 이러한 파일들은 해당 RDD가 더 이상 사용되지 않고 가비지 컬렉트될 때까지 보존됩니다. 이는 라인지가 다시 계산될 경우 셔플 파일을 다시 생성할 필요가 없도록 하기 위해 수행됩니다. 가비지 컬렉션은 애플리케이션이 이러한 RDD에 대한 참조를 유지하거나 GC가 빈번하게 발생하지 않는 경우 장기간 이루어질 수 있습니다. 이는 장기 실행되는 Spark 작업이 많은 양의 디스크 공간을 사용할 수 있음을 의미합니다. 임시 저장 디렉토리는 Spark 컨텍스트를 구성할 때 spark.local.dir 구성 매개변수로 지정됩니다.
+Shuffle also generates a large number of intermediate files on disk. As of Spark 1.3, these files are preserved until the corresponding RDDs are no longer used and are garbage collected. This is done so the shuffle files don’t need to be re-created if the lineage is re-computed. Garbage collection may happen only after a long period of time, if the application retains references to these RDDs or if GC does not kick in frequently. This means that long-running Spark jobs may consume a large amount of disk space. The temporary storage directory is specified by the spark.local.dir configuration parameter when configuring the Spark context.
+
+셔플 동작은 다양한 구성 매개변수를 조정하여 조정할 수 있습니다. Spark 구성 가이드 내의 '셔플 동작' 섹션을 참조하십시오.
+Shuffle behavior can be tuned by adjusting a variety of configuration parameters. See the ‘Shuffle Behavior’ section within the Spark Configuration Guide.
+
+## RDD Persistence
 
 # ㅊ디ㅐㅎ
 RDD는 불변성(Immutable)을 가지며, 여러 노드에 분산되어 저장되는 분산 컬렉션입니다.
