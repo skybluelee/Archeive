@@ -444,7 +444,7 @@ Accumulators are variables that are only “added” to through an associative a
 
 As a user, you can create named or unnamed accumulators. As seen in the image below, a named accumulator (in this instance counter) will display in the web UI for the stage that modifies that accumulator. Spark displays the value for each accumulator modified by a task in the “Tasks” table.
 
-<img src="https://github.com/skybluelee/Archeive/assets/107929903/f125a294-4e2c-49ad-b575-21fad4a94bec.png" width="1000" height="500"/>
+<img src="https://github.com/skybluelee/Archeive/assets/107929903/f125a294-4e2c-49ad-b575-21fad4a94bec.png" width="1000" height="400"/>
 
 Tracking accumulators in the UI can be useful for understanding the progress of running stages (NOTE: this is not yet supported in Python).
 
