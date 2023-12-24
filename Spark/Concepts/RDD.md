@@ -292,6 +292,40 @@ counts = pairs.reduceByKey(lambda a, b: a + b)
 ## Actions
 다음 표는 Spark에서 지원하는 일반적인 action 연산 목록을 나열하고 있다. 자세한 내용은 RDD API 문서([Scala](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/rdd/RDD.html), [Java](https://spark.apache.org/docs/latest/api/java/index.html?org/apache/spark/api/java/JavaRDD.html), [Python](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.RDD.html#pyspark.RDD), [R](https://spark.apache.org/docs/latest/api/R/reference/index.html)) 및 pair RDD 함수 문서([Scala](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/rdd/PairRDDFunctions.html), [Java](https://spark.apache.org/docs/latest/api/java/index.html?org/apache/spark/api/java/JavaPairRDD.html))를 참조하라.
 
+|Action|Meaning|
+|------------|-----------|
+|reduce(_func_)|두 개의 인자를 받아 하나의 결과를 반환하는 함수 func를 사용하여 데이터셋의 요소를 집계한다. 함수는 병렬로 올바르게 계산될 수 있도록 교환 법칙과 결합 법칙을 가져야 한다.|
+|collect()|드라이버 프로그램에서 데이터셋의 모든 요소를 배열로 반환한다. 이는 일반적으로 데이터의 충분히 작은 하위 집합을 반환하는 필터 또는 다른 연산 후에 유용하다.|
+|count()|데이터셋의 요소 수를 반환한다.|
+|first()|데이터셋의 첫 번째 요소를 반환한다 (`take(1)`과 유사).|
+|take(_n_)|데이터셋의 처음 n개의 요소를 배열로 반환한다.|
+|takeSample(_withReplacement_, _num_, [_seed_])|데이터셋의 num 요소를 랜덤 샘플로 반환한다. 복원 유무와 선택적으로 난수 생성기 시드를 지정할 수 있다.|
+|takeOrdered(_n_, [_ordering_])|첫 번째 n개의 RDD 요소를 자연 순서나 사용자 지정 비교자를 사용하여 반환한다.|
+|saveAsTextFile(_path_)|데이터셋의 요소를 지정된 디렉토리(HDFS나 Hadoop 지원 파일 시스템)에 텍스트 파일(또는 여러 텍스트 파일)로 저장한다. Spark는 `toString` 메서드를 호출하여 각 요소를 파일의 텍스트 줄로 변환한다.|
+|saveAsSequenceFile(_path_)(Java and Scala)|데이터셋의 요소를 지정된 경로의 로컬 파일 시스템, HDFS 또는 기타 Hadoop 지원 파일 시스템에 Hadoop SequenceFile 형식으로 저장한다. 이 기능은 Hadoop의 Writable 인터페이스를 구현한 키-값 쌍의 RDD에 사용할 수 있다. Scala에서는 Writable로 암시적으로 변환 가능한 타입에 대해서도 사용할 수 있다 (Spark는 Int, Double, String 등의 기본 타입에 대한 변환을 포함하고 있다).|
+|saveAsObjectFile(_path_)(Java and Scala)|데이터셋의 요소를 Java 직렬화를 사용하여 간단한 형식으로 저장한다. 이후에는 `SparkContext.objectFile()`을 사용하여 로드할 수 있다.|
+|countByKey()|(K, V) 타입의 RDD에만 사용 가능하며, 각 키의 수를 반환하는 (K, Int) 쌍의 해시맵을 반환한다.|
+|foreach(_func_)|데이터셋의 각 요소에 함수 func를 실행한다. 이는 일반적으로 [Accumulator](https://spark.apache.org/docs/latest/rdd-programming-guide.html#accumulators)를 업데이트하거나 외부 저장 시스템과 상호 작용하는 등의 부수 효과를 위해 수행된다.<br><br>참고: `foreach()` 외부에서 Accumulators 외의 변수를 수정하는 것은 정의되지 않은 동작을 초래할 수 있다. 자세한 내용은 [Understanding closures](https://spark.apache.org/docs/latest/rdd-programming-guide.html#understanding-closures-a-nameclosureslinka)를 참조하라.|
+
+Spark RDD API는 일부 액션의 비동기 버전도 제공한다. 예를 들면, `foreach`의 비동기 버전인 `foreachAsync`가 있다. `foreachAsync`는 액션의 완료를 기다리는 대신 즉시 호출자에게 `FutureAction`을 반환합니다. 
+이를 사용하여 액션의 비동기 실행을 관리하거나 대기할 수 있다.
+
+## Shuffle operations
+Certain operations within Spark trigger an event known as the shuffle. The shuffle is Spark’s mechanism for re-distributing data so that it’s grouped differently across partitions. This typically involves copying data across executors and machines, making the shuffle a complex and costly operation.
+
+### Background
+To understand what happens during the shuffle, we can consider the example of the reduceByKey operation. The reduceByKey operation generates a new RDD where all values for a single key are combined into a tuple - the key and the result of executing a reduce function against all values associated with that key. The challenge is that not all values for a single key necessarily reside on the same partition, or even the same machine, but they must be co-located to compute the result.
+
+In Spark, data is generally not distributed across partitions to be in the necessary place for a specific operation. During computations, a single task will operate on a single partition - thus, to organize all the data for a single reduceByKey reduce task to execute, Spark needs to perform an all-to-all operation. It must read from all partitions to find all the values for all keys, and then bring together values across partitions to compute the final result for each key - this is called the shuffle.
+
+Although the set of elements in each partition of newly shuffled data will be deterministic, and so is the ordering of partitions themselves, the ordering of these elements is not. If one desires predictably ordered data following shuffle then it’s possible to use:
+
+- mapPartitions to sort each partition using, for example, .sorted
+- repartitionAndSortWithinPartitions to efficiently sort partitions while simultaneously repartitioning
+- sortBy to make a globally ordered RDD
+
+Operations which can cause a shuffle include repartition operations like repartition and coalesce, ‘ByKey operations (except for counting) like groupByKey and reduceByKey, and join operations like cogroup and join.
+
 
 # ㅊ디ㅐㅎ
 RDD는 불변성(Immutable)을 가지며, 여러 노드에 분산되어 저장되는 분산 컬렉션입니다.
