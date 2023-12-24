@@ -335,44 +335,86 @@ Spark는 모든 키에 대한 모든 값들을 찾기 위해 모든 파티션에
 셔플을 유발할 수 있는 연산에는 [`repartition`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#RepartitionLink) 및 [`coalesce`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#RepartitionLink)와 같은 **repartition** 연산, [`groupByKey`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#GroupByLink) 및 [`reduceByKey`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#ReduceByLink)와 같은 **ByKey** 연산(카운팅은 제외), [`cogroup`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#CogroupLink) 및 [`join`](https://spark.apache.org/docs/latest/rdd-programming-guide.html#JoinLink)과 같은 **join** 연산이 포함된다.
 
 #### Performance Impact
-셔플은 디스크 I/O, 데이터 직렬화, 네트워크 I/O를 포함하기 때문에 비용이 많이 드는 작업입니다. 셔플을 위해 Spark는 데이터를 조직하기 위한 맵 작업 세트와 데이터를 집계하기 위한 리듀스 작업 세트를 생성합니다. 이 용어는 MapReduce에서 비롯되었으며 Spark의 맵 및 리듀스 연산과 직접적으로 관련되어 있지 않습니다.
-The Shuffle is an expensive operation since it involves disk I/O, data serialization, and network I/O. To organize data for the shuffle, Spark generates sets of tasks - map tasks to organize the data, and a set of reduce tasks to aggregate it. This nomenclature comes from MapReduce and does not directly relate to Spark’s map and reduce operations.
+셔플은 디스크 I/O, 데이터 직렬화, 네트워크 I/O를 포함하기 때문에 비용이 많이 드는 작업이다.
+셔플을 위해 Spark는 데이터를 조직하기 위한 map 작업 세트와 데이터를 집계하기 위한 reduce 작업 세트를 생성한다. 
+이 용어는 MapReduce에서 비롯되었으며 Spark의 map과 reduce 연산과 직접적으로 관련되어 있지는 않다.
 
-내부적으로, 개별 맵 작업에서의 결과는 메모리에 보관되며 더 이상 저장할 수 없을 때까지 유지됩니다. 그런 다음, 이러한 결과는 대상 파티션을 기준으로 정렬되어 단일 파일로 쓰여집니다. 리듀스 측에서 작업은 관련된 정렬된 블록을 읽습니다.
-Internally, results from individual map tasks are kept in memory until they can’t fit. Then, these are sorted based on the target partition and written to a single file. On the reduce side, tasks read the relevant sorted blocks.
+내부적으로, 개별 map 작업에서의 결과는 메모리에 보관되며 더 이상 저장할 수 없을 때까지 유지된다. 그런 다음, 이러한 결과는 대상 파티션을 기준으로 정렬되어 단일 파일로 쓰여진다. reduce 측에서 작업은 관련된 정렬된 블록을 읽는다.
 
-특정 셔플 작업은 기록 전후에 레코드를 조직하기 위해 메모리 내 데이터 구조를 사용하므로 큰 양의 힙 메모리를 소비할 수 있습니다. 구체적으로, reduceByKey 및 aggregateByKey는 맵 측에서 이러한 구조를 생성하며, 'ByKey' 작업은 리듀스 측에서 이를 생성합니다. 데이터가 메모리에 맞지 않으면 Spark는 이러한 테이블을 디스크에 스피릴링(spill)하여 디스크 I/O의 추가 오버헤드와 증가된 가비지 컬렉션 비용을 발생시킵니다.
-Certain shuffle operations can consume significant amounts of heap memory since they employ in-memory data structures to organize records before or after transferring them. Specifically, reduceByKey and aggregateByKey create these structures on the map side, and 'ByKey operations generate these on the reduce side. When data does not fit in memory Spark will spill these tables to disk, incurring the additional overhead of disk I/O and increased garbage collection.
+특정 셔플 작업은 레코드를 조직하기 위해 레코드 전송 전/후에 메모리 내 데이터 구조를 사용하므로 큰 양의 힙 메모리를 소비할 수 있다. 
+구체적으로, `reduceByKey` 및 `aggregateByKey`는 map 측에서 이러한 구조를 생성하며, ByKey 작업은 reduce 측에서 이를 생성한다. 
+데이터가 메모리에 맞지 않으면 Spark는 이러한 테이블을 디스크에 스피릴링(spilling)하여 디스크 I/O의 추가 오버헤드와 증가된 가비지 컬렉션 비용을 발생시킨다.
 
-셔플은 또한 디스크에 많은 수의 중간 파일을 생성합니다. Spark 1.3부터는 이러한 파일들은 해당 RDD가 더 이상 사용되지 않고 가비지 컬렉트될 때까지 보존됩니다. 이는 라인지가 다시 계산될 경우 셔플 파일을 다시 생성할 필요가 없도록 하기 위해 수행됩니다. 가비지 컬렉션은 애플리케이션이 이러한 RDD에 대한 참조를 유지하거나 GC가 빈번하게 발생하지 않는 경우 장기간 이루어질 수 있습니다. 이는 장기 실행되는 Spark 작업이 많은 양의 디스크 공간을 사용할 수 있음을 의미합니다. 임시 저장 디렉토리는 Spark 컨텍스트를 구성할 때 spark.local.dir 구성 매개변수로 지정됩니다.
-Shuffle also generates a large number of intermediate files on disk. As of Spark 1.3, these files are preserved until the corresponding RDDs are no longer used and are garbage collected. This is done so the shuffle files don’t need to be re-created if the lineage is re-computed. Garbage collection may happen only after a long period of time, if the application retains references to these RDDs or if GC does not kick in frequently. This means that long-running Spark jobs may consume a large amount of disk space. The temporary storage directory is specified by the spark.local.dir configuration parameter when configuring the Spark context.
+> 스피릴링(spilling)은 메모리 내의 데이터나 작업 결과가 메모리에 모두 저장될 수 없을 때, 초과된 데이터를 임시로 디스크에 저장하는 프로세스를 의미한다. Spark와 같은 분산 컴퓨팅 프레임워크에서는 메모리 제한이나 대규모 데이터 처리 작업 때문에 이러한 스피릴링 메커니즘을 사용하여 성능을 유지하고 데이터 손실 없이 처리할 수 있게 한다. 스피릴링은 일반적으로 비용이 더 많이 들기 때문에, 가능하면 메모리에 데이터를 보관하는 것이 더 효율적이지만, 제한된 메모리 용량 내에서는 스피릴링이 필요할 수 있다.
 
-셔플 동작은 다양한 구성 매개변수를 조정하여 조정할 수 있습니다. Spark 구성 가이드 내의 '셔플 동작' 섹션을 참조하십시오.
-Shuffle behavior can be tuned by adjusting a variety of configuration parameters. See the ‘Shuffle Behavior’ section within the Spark Configuration Guide.
+셔플은 또한 디스크에 많은 수의 중간 파일을 생성한다.
+Spark 1.3부터는 이러한 파일들은 해당 RDD가 더 이상 사용되지 않고 가비지 컬렉트(garbage collected)될 때까지 보존된다. 이는 라인지(lineage)가 다시 계산될 경우 셔플 파일을 다시 생성할 필요가 없도록 하기 위해 수행된다. 
+가비지 컬렉션은 애플리케이션이 이러한 RDD에 대한 참조를 유지하거나 GC가 빈번하게 발생하지 않는 경우 장기간 이후에 발생할 수 있다. 
+이는 장기 실행되는 Spark 작업이 많은 양의 디스크 공간을 사용할 수 있음을 의미한다. 임시 저장 디렉토리는 Spark 컨텍스트를 구성할 때 `spark.local.dir` 구성 매개변수로 지정된다.
+
+셔플 동작은 다양한 구성 매개변수를 조정하여 조정할 수 있다. [Spark Configuration Guide](https://spark.apache.org/docs/latest/configuration.html) 내의 'Shuffle Behavior' 섹션을 참조하라.
 
 ## RDD Persistence
+Spark에서 가장 중요한 기능 중 하나는 연산 간에 메모리에 데이터셋을 지속적으로 저장(또는 캐싱)하는 것이다.
+RDD를 지속적으로 저장하면 각 노드는 해당 RDD의 파티션을 메모리에 저장하고 그 데이터셋(또는 그것을 기반으로 한 데이터셋)의 다른 작업에서 재사용한다. 
+이 방식을 사용하여 미래의 작업이 훨씬 빠르게(주로 10배 이상) 실행될 수 있다. 캐싱은 반복 알고리즘과 빠른 대화형 사용을 위한 핵심 도구이다.
 
-# ㅊ디ㅐㅎ
-RDD는 불변성(Immutable)을 가지며, 여러 노드에 분산되어 저장되는 분산 컬렉션입니다.
-RDD는 Spark의 핵심 데이터 모델로 사용되며, 다양한 연산을 지원하여 데이터 처리 및 분석 작업을 수행할 수 있습니다.
+RDD를 지속적으로 저장하려면 해당 RDD에 대해 `persist()` 또는 `cache()` 메서드를 사용하면 된다.
+첫 번째로 action에서 계산될 때 해당 RDD는 노드의 메모리에 보관된다. 
+Spark의 캐시는 고장 허용성(fault-tolerant)을 갖추고 있어, RDD의 어떤 파티션이 손실되더라도 원래 생성한 transformation을 사용하여 자동으로 재계산된다.
 
-RDD의 주요 특징과 동작 방식은 다음과 같습니다:
+또한, 각 저장된 RDD는 다른 저장 수준을 사용하여 저장될 수 있다.
+예를 들어, 데이터셋을 디스크에 저장하거나 메모리에 직렬화된 Java 객체로 저장(공간을 절약하기 위해)하거나 노드 간에 복제하는 등의 방법이 있다.
+이러한 수준은 `persist()`에 StorageLevel 객체([Scala](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/storage/StorageLevel.html), [Java](https://spark.apache.org/docs/latest/api/java/index.html?org/apache/spark/storage/StorageLevel.html), [Python](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.StorageLevel.html#pyspark.StorageLevel))를 전달하는 방식으로 설정된다.
+`cache()` 메서드는 기본 저장 수준인 `StorageLevel.MEMORY_ONLY`(메모리에 직렬화되지 않은 객체를 저장)을 사용하는 약칭이다. 
+사용 가능한 모든 저장 수준은 다음과 같다.
 
-불변성(Immutable): RDD는 변경할 수 없는 데이터 구조입니다. RDD는 생성된 후에는 수정할 수 없으며, 새로운 RDD를 생성하여 변환 작업을 수행합니다. 이는 데이터의 일관성과 안정성을 보장합니다.
+|Storage|Level	Meaning|
+|-------|--------------|
+|MEMORY_ONLY|JVM 내의 역직렬화된 Java 객체로 RDD를 저장한다. RDD가 메모리에 맞지 않으면 일부 파티션은 캐시되지 않고 필요할 때마다 동적으로 재계산된다. 이것이 디폴트 레벨이다.|
+|MEMORY_AND_DISK|JVM 내의 역직렬화된 Java 객체로 RDD를 저장한다. RDD가 메모리에 맞지 않으면 메모리에 맞지 않는 파티션을 디스크에 저장하고 필요할 때 그곳에서 읽는다.|
+|MEMORY_ONLY_SER(Java and Scala)|각 파티션당 하나의 바이트 배열로 직렬화된 Java 객체로 RDD를 저장한다. 일반적으로 빠른 직렬화 프로그램을 사용할 때 역직렬화 객체를 사용하는 것 보다 특히 더 공간 효율적이지만, 읽는 데 CPU 부하가 더 많다.|
+|MEMORY_AND_DISK_SER(Java and Scala)|MEMORY_ONLY_SER와 유사하지만, 메모리에 맞지 않는 파티션을 필요할 때마다 동적으로 재계산하는 대신 디스크로 스피릴링(spilling)한다.|
+|DISK_ONLY|파티션을 디스크에만 저장한다.|
+|MEMORY_ONLY_2, MEMORY_AND_DISK_2, etc.|MEMORY_AND_DISK_2 등 위의 수준과 동일하지만, 각 파티션을 클러스터 노드 두 개에 복제한다.|
+|OFF_HEAP(experimental)|MEMORY_ONLY_SER와 유사하지만, 데이터를 오프-힙 메모리에 저장한다. 이때 오프-힙 메모리가 활성화되어 있어야 한다.|
 
-분산성(Distributed): RDD는 여러 개의 노드에 분산하여 저장되는 데이터 구조입니다. RDD는 클러스터의 여러 노드에 분할되어 저장되며, 각 노드에서 동시에 처리될 수 있습니다.
+> 오프-힙(Off-Heap) 메모리는 JVM의 힙(heap) 영역 외부에 데이터를 저장하는 메모리 공간을 의미한다. 일반적으로 Java 애플리케이션은 JVM의 힙 내에서 객체를 할당하고 관리하지만, 오프-힙 메모리는 JVM의 힙 영역을 벗어나 있는 메모리 공간을 참조한다.
 
-탄력성(Resilient): RDD는 데이터의 손실을 방지하기 위해 장애에 대처할 수 있는 기능을 가지고 있습니다. RDD는 특정 노드에서 실패하더라도 다른 노드에서 재계산이 가능하므로 데이터의 내구성을 보장합니다.
+주의: Python에서 저장된 객체는 항상 Pickle 라이브러리로 직렬화된다. 따라서 직렬화 수준을 선택하는 것은 중요하지 않다. 
+Python에서 사용 가능한 저장 수준에는 MEMORY_ONLY, MEMORY_ONLY_2, MEMORY_AND_DISK, MEMORY_AND_DISK_2, DISK_ONLY, DISK_ONLY_2, DISK_ONLY_3이 포함된다.
 
-지연 평가(Lazy Evaluation): RDD는 지연 평가(Lazy Evaluation) 방식을 사용하여 연산을 지연시킵니다. RDD에 연산을 수행해도 결과가 즉시 계산되지 않고, 실제로 데이터가 필요한 시점에서만 연산이 수행됩니다. 
-이를 통해 최적화된 실행 계획을 수립하고 연산 성능을 향상시킬 수 있습니다.
+Spark는 사용자가 `persist`를 호출하지 않더라도 shuffle 연산(예: `reduceByKey`)에서 일부 중간 데이터를 자동으로 저장한다. 이는 shuffle 중에 노드가 실패할 경우 전체 입력을 다시 계산하는 것을 피하기 위해 수행된다. 사용자가 결과 RDD를 재사용할 계획이 있다면 여전히 `persist`를 호출하는 것을 권장한다.
 
-RDD는 다양한 연산을 지원하여 데이터 처리를 유연하게 수행할 수 있습니다. 주요 RDD 연산에는 변환 연산(Transformations)과 액션 연산(Actions)이 있습니다.
+### Which Storage Level to Choose?
+Spark의 저장 수준은 메모리 사용과 CPU 효율성 사이의 다른 trade-off를 제공하기 위해 설계되었다. 다음 과정을 통해 하나를 선택하는 것을 추천한다.
+- RDDs가 기본 저장 수준(MEMORY_ONLY)에 편안하게 맞는다면 그대로 사용해라. 이것은 가장 CPU 효율적인 옵션으로, RDDs의 연산이 가능한 한 빠르게 실행되게 한다.
+- 그렇지 않다면, (Java와 Scala의 경우) MEMORY_ONLY_SER를 사용하고 빠른 직렬화 라이브러리를 선택하여 객체를 훨씬 더 공간 효율적으로 만들어라. 여전히 상대적으로 빠르게 액세스할 수 있다. 
+- 데이터셋을 계산하는 함수가 비용이 많이 들거나 데이터의 큰 부분을 필터링한다면 디스크로 스피릴링(spill)하지 않는 것이 좋다. 그렇지 않으면, 파티션을 다시 계산하는 것이 디스크에서 읽는 것만큼 빠를 수 있다.
+- 웹 애플리케이션의 요청을 처리하기 위해 Spark를 사용하는 경우와 같이 빠른 장애 복구를 원한다면 복제된 저장 수준(replicated storage level)을 사용하라. 모든 저장 수준은 데이터의 손실을 다시 계산함으로써 완전한 장애 허용성을 제공하지만, 복제된 수준은 손실된 파티션을 다시 계산하기를 기다리지 않고도 RDD에서 작업을 계속 실행할 수 있게 해준다.
 
-변환 연산(Transformations): RDD를 변형하여 새로운 RDD를 생성하는 연산입니다. 예를 들어, map, filter, reduceByKey 등의 연산을 사용하여 RDD의 요소를 변환, 필터링하거나 그룹화할 수 있습니다.
+### Removing Data
+Spark는 각 노드에서 캐시 사용량을 자동으로 모니터링하고 가장 최근에 사용되지 않은 순서(Least-Recently-Used, LRU)로 오래된 데이터 파티션을 제거한다. 
+캐시에서 데이터가 자동으로 제거되는 것을 기다리는 대신 RDD를 수동으로 제거하려면 `RDD.unpersist()` 메서드를 사용하라. 
+이 메서드는 기본적으로 블록되지 않는다. 리소스가 해제될 때까지 블록하려면 이 메서드를 호출할 때 `blocking=true`를 지정하라.
 
-액션 연산(Actions): RDD에서 결과 값을 반환하는 연산입니다. 예를 들어, count, collect, reduce 등의 연산을 사용하여 RDD의 요소를 계산하거나 수집할 수 있습니다.
+## RDD 요약
+RDD는 불변성(Immutable)을 가지며, 여러 노드에 분산되어 저장되는 분산 컬렉션이다.
+RDD는 Spark의 핵심 데이터 모델로 사용되며, 다양한 연산을 지원하여 데이터 처리 및 분석 작업을 수행할 수 있다.
 
-RDD는 Spark의 다른 고수준 API인 DataFrame과 Dataset으로 변환될 수 있으며, 더 직관적이고 효율적인 데이터 조작을 위해 사용될 수 있습니다.
+RDD의 주요 특징과 동작 방식은 다음과 같다.
+- 불변성(Immutable): RDD는 변경할 수 없는 데이터 구조로, RDD는 생성된 후에는 수정할 수 없으며, 새로운 RDD를 생성하여 변환 작업을 수행한다. 이는 데이터의 일관성과 안정성을 보장한다.
+- 분산성(Distributed): RDD는 여러 개의 노드에 분산하여 저장되는 데이터 구조이다. RDD는 클러스터의 여러 노드에 분할되어 저장되며, 각 노드에서 동시에 처리될 수 있다.
+- 탄력성(Resilient): RDD는 데이터의 손실을 방지하기 위해 장애에 대처할 수 있는 기능을 가지고 있다. RDD는 특정 노드에서 실패하더라도 다른 노드에서 재계산이 가능하므로 데이터의 내구성을 보장한다.
+- 지연 평가(Lazy Evaluation): RDD는 지연 평가(Lazy Evaluation) 방식을 사용하여 연산을 지연시킨다. RDD에 연산을 수행해도 결과가 즉시 계산되지 않고, 실제로 데이터가 필요한 시점에서만 연산이 수행된다. 
+이를 통해 최적화된 실행 계획을 수립하고 연산 성능을 향상시킬 수 있다.
 
-따라서, Spark RDD는 분산되고 탄력적이며, 다양한 변환과 액션 연산을 지원하는 기본적인 데이터 구조로 사용되는 중요한 개념입니다.
+RDD는 다양한 연산을 지원하여 데이터 처리를 유연하게 수행할 수 있다. 주요 RDD 연산에는 변환 연산(Transformations)과 액션 연산(Actions)이 있다.
+- 변환 연산(Transformations): RDD를 변형하여 새로운 RDD를 생성하는 연산이다. 예를 들어, `map`, `filter`, `reduceByKey` 등의 연산을 사용하여 RDD의 요소를 변환, 필터링하거나 그룹화할 수 있다.
+- 액션 연산(Actions): RDD에서 결과 값을 반환하는 연산이다. 예를 들어, `count`, `collect`, `reduce` 등의 연산을 사용하여 RDD의 요소를 계산하거나 수집할 수 있다.
+
+RDD는 Spark의 다른 고수준 API인 DataFrame과 Dataset으로 변환될 수 있으며, 더 직관적이고 효율적인 데이터 조작을 위해 사용될 수 있다.
+따라서, Spark RDD는 분산되고 탄력적이며, 다양한 변환과 액션 연산을 지원하는 기본적인 데이터 구조로 사용되는 중요한 개념이다.
+
+# Shared Variables
+Normally, when a function passed to a Spark operation (such as map or reduce) is executed on a remote cluster node, it works on separate copies of all the variables used in the function. These variables are copied to each machine, and no updates to the variables on the remote machine are propagated back to the driver program. Supporting general, read-write shared variables across tasks would be inefficient. However, Spark does provide two limited types of shared variables for two common usage patterns: broadcast variables and accumulators.
