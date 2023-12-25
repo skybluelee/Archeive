@@ -423,11 +423,16 @@ RDD는 Spark의 다른 고수준 API인 DataFrame과 Dataset으로 변환될 수
 그러나 Spark는 두 가지 일반적인 사용 패턴을 위해 두 가지 제한된 유형의 공유 변수, 즉 브로드캐스트(broadcast) 변수와 어큐뮬레이터(accumulator)를 제공한다.
 
 ## Broadcast Variables
-Broadcast variables allow the programmer to keep a read-only variable cached on each machine rather than shipping a copy of it with tasks. They can be used, for example, to give every node a copy of a large input dataset in an efficient manner. Spark also attempts to distribute broadcast variables using efficient broadcast algorithms to reduce communication cost.
+브로드캐스트 변수는 프로그래머에게 작업과 함께 원본의 복사본을 전송하는 대신 각 머신에 캐시된 읽기 전용 변수를 유지할 수 있게 해준다.
+브로드캐스트 변수는 효율적인 방식으로 대량의 입력 데이터셋의 복사본을 각 노드에 전송한다. 
+Spark는 또한 통신 비용을 줄이기 위해 효율적인 브로드캐스트 알고리즘을 사용하여 브로드캐스트 변수를 분배하려고 시도한다.
 
-Spark actions are executed through a set of stages, separated by distributed “shuffle” operations. Spark automatically broadcasts the common data needed by tasks within each stage. The data broadcasted this way is cached in serialized form and deserialized before running each task. This means that explicitly creating broadcast variables is only useful when tasks across multiple stages need the same data or when caching the data in deserialized form is important.
-
-Broadcast variables are created from a variable v by calling SparkContext.broadcast(v). The broadcast variable is a wrapper around v, and its value can be accessed by calling the value method. The code below shows this:
+Spark의 액션은 분산 "셔플" 작업에 의해 분리된 여러 단계를 통해 실행된다. 
+Spark는 각 단계 내의 작업에서 필요한 공통 데이터를 자동으로 브로드캐스팅한다. 
+이렇게 브로드캐스팅된 데이터는 직렬화된 형태로 캐시되며 각 작업을 실행하기 전에 역직렬화된다. 
+이는 여러 단계를 거치는 작업에서 동일한 데이터가 필요하거나 역직렬화된 형태로 데이터를 캐싱하는 것이 중요할 때만 명시적으로 브로드캐스트 변수를 생성하는 것이 유용하다는 것을 의미한다.
+***
+브로드캐스트 변수는 변수 v를 호출하여 `SparkContext.broadcast(v)`를 통해 생성된다. 브로드캐스트 변수는 v 주변의 래퍼(wrapper)이며, value 메서드를 호출하여 값에 접근할 수 있다.
 ```
 >>> broadcastVar = sc.broadcast([1, 2, 3])
 <pyspark.broadcast.Broadcast object at 0x102789f10>
@@ -435,22 +440,26 @@ Broadcast variables are created from a variable v by calling SparkContext.broadc
 >>> broadcastVar.value
 [1, 2, 3]
 ```
-After the broadcast variable is created, it should be used instead of the value v in any functions run on the cluster so that v is not shipped to the nodes more than once. In addition, the object v should not be modified after it is broadcast in order to ensure that all nodes get the same value of the broadcast variable (e.g. if the variable is shipped to a new node later).
+브로드캐스트 변수가 생성된 후에는 클러스터에서 실행되는 모든 함수에서 값 v 대신에 브로드캐스트 변수를 사용함으로써 v가 노드로 여러 번 전송되는 것을 방지한다. 또한, 모든 노드가 동일한 브로드캐스트 변수의 값을 갖도록 하기 위해 브로드캐스트된 후에는 객체 v를 수정해서는 안 된다.
 
-To release the resources that the broadcast variable copied onto executors, call .unpersist(). If the broadcast is used again afterwards, it will be re-broadcast. To permanently release all resources used by the broadcast variable, call .destroy(). The broadcast variable can’t be used after that. Note that these methods do not block by default. To block until resources are freed, specify blocking=true when calling them.
+브로드캐스트 변수가 executor에 복사된 리소스를 해제하려면 `.unpersist()`를 호출하면 된다. 이후에 다시 브로드캐스트를 사용하면 재-브로드캐스트된다. 브로드캐스트 변수에 사용된 모든 리소스를 영구적으로 해제하려면 `.destroy()`를 호출하면 된다. 그 후에는 브로드캐스트 변수를 사용할 수 없다. 이러한 메서드는 기본적으로 블록되지 않으며, 리소스가 해제될 때까지 블록하려면 호출할 때 `blocking=true`를 지정해야 한다.
 
 ## Accumulators
-Accumulators are variables that are only “added” to through an associative and commutative operation and can therefore be efficiently supported in parallel. They can be used to implement counters (as in MapReduce) or sums. Spark natively supports accumulators of numeric types, and programmers can add support for new types.
+Accumulator는 결합적이고 교환적인 연산을 통해서만 "추가"되는 변수들이며, 병렬로 효율적으로 지원될 수 있다. 
+Accumulator는 MapReduce에서와 같이 카운터를 구현하는 데나 합계를 계산하는 데 사용될 수 있다. 
+Spark는 기본적으로 숫자 타입의 Accumulator를 지원하며, 프로그래머는 새로운 타입을 지원하도록 추가할 수 있다.
 
-As a user, you can create named or unnamed accumulators. As seen in the image below, a named accumulator (in this instance counter) will display in the web UI for the stage that modifies that accumulator. Spark displays the value for each accumulator modified by a task in the “Tasks” table.
+사용자는 이름이 지정된 또는 이름이 없는 Accumulator를 생성할 수 있다.
+아래의 이미지에서 볼 수 있듯이, 이름이 지정된 Accumulator(이 경우 카운터)는 해당 Accumulator를 수정하는 단계의 웹 UI에 표시된다. 
+Spark는 "Tasks" 테이블에서 각 작업이 수정한 Accumulator의 값을 표시한다.
 
 <img src="https://github.com/skybluelee/Archeive/assets/107929903/f125a294-4e2c-49ad-b575-21fad4a94bec.png" width="1000" height="400"/>
 
-Tracking accumulators in the UI can be useful for understanding the progress of running stages (NOTE: this is not yet supported in Python).
+UI에서 Accumulator를 추적하는 것은 실행 중인 단계의 진행 상황을 이해하는 데 유용할 수 있다 (주의: 이 기능은 아직 Python에서 지원되지 않는다).
+***
+Accumulator는 초기 값 v에서 SparkContext.accumulator(v)를 호출하여 생성된다. 클러스터에서 실행되는 작업들은 add 메서드나 += 연산자를 사용하여 Accumulator에 값을 추가할 수 있다. 그러나 그들은 그 값을 읽을 수 없다. 오직 드라이버 프로그램만 그 Accumulator의 값을 읽을 수 있으며, 그 값 메서드를 사용하여 읽을 수 있다.
 
-An accumulator is created from an initial value v by calling SparkContext.accumulator(v). Tasks running on a cluster can then add to it using the add method or the += operator. However, they cannot read its value. Only the driver program can read the accumulator’s value, using its value method.
-
-The code below shows an accumulator being used to add up the elements of an array:
+아래 코드는 배열의 요소들을 더하는 데 Accumulator가 사용되는 것을 보여준다.
 ```
 >>> accum = sc.accumulator(0)
 >>> accum
@@ -463,7 +472,8 @@ Accumulator<id=0, value=0>
 >>> accum.value
 10
 ```
-While this code used the built-in support for accumulators of type Int, programmers can also create their own types by subclassing AccumulatorParam. The AccumulatorParam interface has two methods: zero for providing a “zero value” for your data type, and addInPlace for adding two values together. For example, supposing we had a Vector class representing mathematical vectors, we could write:
+이 코드는 Int 타입의 누적기에 대한 내장 지원을 사용했지만, 프로그래머는 [AccumulatorParam](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.AccumulatorParam.html#pyspark.AccumulatorParam)을 하위 클래스로 만들어 자신만의 타입을 생성할 수도 있다.
+AccumulatorParam 인터페이스에는 두 개의 메서드가 있습니다: "제로 값"을 제공하는 `zero`와 두 값을 더하는 `addInPlace`이다. 예를 들어, 수학적 벡터를 나타내는 Vector 클래스가 있다고 가정하면, 다음과 같이 작성할 수 있다.
 ```
 class VectorAccumulatorParam(AccumulatorParam):
     def zero(self, initialValue):
@@ -476,9 +486,14 @@ class VectorAccumulatorParam(AccumulatorParam):
 # Then, create an Accumulator of this type:
 vecAccum = sc.accumulator(Vector(...), VectorAccumulatorParam())
 ```
-For accumulator updates performed inside actions only, Spark guarantees that each task’s update to the accumulator will only be applied once, i.e. restarted tasks will not update the value. In transformations, users should be aware of that each task’s update may be applied more than once if tasks or job stages are re-executed.
-
-Accumulators do not change the lazy evaluation model of Spark. If they are being updated within an operation on an RDD, their value is only updated once that RDD is computed as part of an action. Consequently, accumulator updates are not guaranteed to be executed when made within a lazy transformation like map(). The below code fragment demonstrates this property:
+액션 내에서 수행되는 Accumulator 업데이트에 대해서만, Spark는 각 작업의 Accumulator 업데이트가 한 번만 적용될 것을 보장한다. 
+즉, 재시작된 작업은 값을 업데이트하지 않는다.
+변환에서는 작업(task)이나 작업 단계(job stage)가 다시 실행될 경우 각 작업의 업데이트가 한 번 이상 적용될 수 있음을 알고 있어야 한다.
+***
+Accumulator는 Spark의 지연 평가 모델을 변경하지 않는다. 
+Accumulator가 RDD의 연산 내에서 업데이트되는 경우, 그 값은 액션의 일부로 RDD가 계산될 때만 업데이트된다. 
+따라서 Accumulator 업데이트는 `map()`과 같은 지연 변환 내에서 실행될 것이라는 보장은 없다.
+아래 코드는 이 특성을 보여준다.
 ```
 accum = sc.accumulator(0)
 def g(x):
