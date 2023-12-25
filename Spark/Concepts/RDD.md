@@ -473,7 +473,9 @@ Accumulator<id=0, value=0>
 10
 ```
 이 코드는 Int 타입의 누적기에 대한 내장 지원을 사용했지만, 프로그래머는 [AccumulatorParam](https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.AccumulatorParam.html#pyspark.AccumulatorParam)을 하위 클래스로 만들어 자신만의 타입을 생성할 수도 있다.
-AccumulatorParam 인터페이스에는 두 개의 메서드가 있습니다: "제로 값"을 제공하는 `zero`와 두 값을 더하는 `addInPlace`이다. 예를 들어, 수학적 벡터를 나타내는 Vector 클래스가 있다고 가정하면, 다음과 같이 작성할 수 있다.
+AccumulatorParam 인터페이스에는 두 개의 메서드가 있다.
+"제로 값"을 제공하는 `zero`와 두 값을 더하는 `addInPlace`이다. 
+예를 들어, 수학적 벡터를 나타내는 Vector 클래스가 있다고 가정하면, 다음과 같이 작성할 수 있다.
 ```
 class VectorAccumulatorParam(AccumulatorParam):
     def zero(self, initialValue):
