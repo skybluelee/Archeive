@@ -54,6 +54,16 @@ x-airflow-common:
 ```
 디폴트값은 `'true'`이며 이 상태로 진행하는 경우 기본 예제가 매우 많이 존재하기에 `'false'`로 변경한다.
 
+## **볼륨 위치 변경**
+```
+  volumes:
+    - ${AIRFLOW_PROJ_DIR:-.}/dags:/home/ubuntu/airflow/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/logs:/home/ubuntu/airflow/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-.}/config:/home/ubuntu/airflow/airflow/config
+    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/home/ubuntu/airflow/airflow/plugins
+```
+기존의 `opt/airflow/airflow/dags`는 해당 디렉토리가 존재하지 않으므로 적절하게 수정한다.
+
 ## **셀레니움 추가**
 ```
 services:
@@ -81,6 +91,11 @@ x-airflow-common:
     ...
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     ...
+  volumes:
+    - ${AIRFLOW_PROJ_DIR:-.}/dags:/home/ubuntu/airflow/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/logs:/home/ubuntu/airflow/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-.}/config:/home/ubuntu/airflow/airflow/config
+    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/home/ubuntu/airflow/airflow/plugins
 ...
 service:
   selenium:
