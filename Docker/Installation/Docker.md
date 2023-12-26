@@ -98,6 +98,7 @@ sudo docker run hello-world
 > 팁:
 >
 > 루트 없이 실행하려고 할 때 오류가 발생하는가?
+> 
 도커 사용자 그룹은 존재하지만 사용자가 없어서 도커 명령어를 실행하기 위해 `sudo`를 사용해야 한다.
 [Linux postinstall](https://docs.docker.com/engine/install/linux-postinstall)로 계속 진행하여 비권한 사용자가 도커 명령어를 실행하도록 하고, 선택적인 구성을 설정하라.
 
