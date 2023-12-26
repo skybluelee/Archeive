@@ -200,3 +200,78 @@ docker compose down --volumes --rmi all
 ```
 
 ## Using custom images
+로컬에서 Airflow를 실행하고 싶은 경우, 새로운 파이썬 패키지 혹은 최신 버전의 라이브러리 등의 추가 종속성을 포함하는 확장된(extended) 이미지를 사용하고 싶은 경우가 있을 것이다.
+이는 `docker-compose.yaml`에서 `build.`을 사용하고 사용자 정의 DOckerfile을 `docker-compose.yaml` 파일에 위치함으로써 쉽게 사용할 수 있다.
+`docker compose build` 명령을 사용해 이미지를 생성하고(한 번만 하면 된다) `docker compose` 명령 실행시에 `docker compose`에 `--build` 플래그를 추가하면 된다.
+
+사용자 지정 제공자, 파이썬 패키지, apt 파캐지 등을 추가한 확장된 이미지를 사용하는 방법은 [Building the image](https://airflow.apache.org/docs/docker-stack/build.html)에서 확인할 수 있다.
+
+> 주의
+>
+> 사용자 지정 이미지를 생성한다는 것은 원하는 패키지나 Airflow가 업그레이드될 때 이미지를 다시 생성해야 한다는 자동화 수준도 유지해야 한다는 것을 의미한다.
+> 이러한 스크립트들을 유지하는 것을 잊어선 안된다.
+> 또한 순수한 Python 작업을 실행할 경우 [Python Virtualenv 함수](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/_howto/operator:PythonVirtualenvOperator)를 사용하여 런타임 동안 Python 종속성을 동적으로 소스하고 설치할 수 있다.
+>  Airflow 2.8.0에서 Virtualenvs도 캐시될 수 있다.
+
+## Special case - adding dependencies via requirements.txt file
+사용자 지정 이미지의 일반적인 케이스는 해당 이미지에 일련의 요구사항(일반적으로 `requirements.txt` 파일에 저장된다)을 추가하고 싶을 때다
+개발을 위해 원래의 airflow 이미지를 시작할 때 동적으로 추가하려는 유혹을 느낄 수 있지만, 이것은 여러 부작용을 초래한다 (예를 들어 각 추가 종속성마다 컨테이너가 훨씬 더 느리게 시작된다). 
+또한, 도커 컴포즈에는 개발 워크플로우가 내장되어 있으므로 이러한 추가 작업은 완전히 불필요하다.
+이전 챕터를 따라, 로컬에서 docker compose와 반복 작업할 때 자동으로 사용자 지정 이미지를 빌드하고 사용할 수 있다. 
+특히 자신의 요구사항 파일을 추가하려면 다음 단계를 수행해야 한다.
+
+1. `docker-compose.yaml` 파일에서 `image: ...` 라인에 주석 처리하고 `build: .` 라인의 주석을 제거하라. docker-compose 파일은 다음과 유사하게 보여야 한다 (올바른 이미지 태그를 사용해야 한다).
+```
+#image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.6.1}
+build: .
+```
+2. `docker-compose.yaml` 파일이 있는 디렉토리에서 `Dockerfile`를 생성하고, 다음과 유사해야 한다.
+```
+FROM apache/airflow:2.6.1
+ADD requirements.txt .
+RUN pip install apache-airflow==${AIRFLOW_VERSION} -r requirements.txt
+```
+apache-airflow를 원본 이미지에서 제공되는 것과 동일한 버전으로 설치하는 것이 최선의 방법이다.
+이렇게 하면 다른 요구사항을 설치하는 동안 `pip`가 apache airflow의 버전을 다운그레이드하거나 업그레이드하려고 시도하지 않을 것이므로, 사용 중인 apache-airflow의 버전과 충돌하는 의존성을 추가하려고 할 때 발생할 수 있는 문제를 방지할 수 있다.
+3. 동일한 디렉토리에 `requirements.txt` 파일을 배치해야 한다.
+이미지를 빌드하려면 `docker compose build`를 실행하거나, 필요에 따라 이미지를 자동으로 빌드하기 위해 `docker compose up` 또는 `docker compose run` 명령에 `--build` 플래그를 추가해야 한다.
+
+## Networking
+일반적으로 로컬에서 Airflow를 사용하려면 DAG가 호스트에서 실행 중인 서버에 연결하려고 할 것이다. 
+이를 위해 `docker-compose.yaml`에 추가 구성이 추가되어야 한다. 
+예를 들어, Linux에서 `services: airflow-worker` 섹션에 `extra_hosts: - "host.docker.internal:host-gateway";`를 추가하고 `localhost` 대신 `host.docker.internal`을 사용해야 한다.
+이 구성은 다양한 플랫폼에서 다르다.
+[Windows](https://docs.docker.com/desktop/windows/networking/#use-cases-and-workarounds)와 [Mac](https://docs.docker.com/desktop/mac/networking/#use-cases-and-workarounds)에 대한 추가 정보는 Docker 문서를 참조하라.
+
+## FAQ: Frequently asked questions
+**`ModuleNotFoundError: No module named 'XYZ'`**
+
+도커 컴포즈는 가잗 최신의 Airflow 이미지를 사용한다.
+파이썬 라이브러리나, 시스템 라이브러리를 설치하고자 하면, 이미지를 사용자가 원하는 방식으로 확장하면 된다.
+
+## What’s Next?
+이 지점에서는 더 많은 예시를 원한다면면 [튜토리얼](https://airflow.apache.org/docs/apache-airflow/stable/tutorial/index.html) 섹션으로, 직접 실습을 시작하고 싶다면 [How-to Guides](https://airflow.apache.org/docs/apache-airflow/stable/howto/index.html) 섹션으로 이동하면 된다.
+
+## Environment variables supported by Docker Compose
+여기에 나온 변수와 이미지가 빌드될 때의 빌드 인자와 혼동해서는 안된다.
+`AIRFLOW_UID` 빌드 인자는 이미지가 빌드될 때 기본값으로 50000으로 설정되어 이미지에 "구워진다" (baked).
+반면에 아래의 환경 변수들은 컨테이너가 실행될 때 설정될 수 있으며, 예를 들어 `id -u` 명령의 결과를 사용하여 런타임에서 동적 호스트 사용자 ID를 사용할 수 있게 해준다.
+이는 이미지를 빌드할 때 알 수 없는 값이다.
+
+|Variable|Description|Default|
+|--------|-----------|-------|
+|AIRFLOW_IMAGE_NAME|사용할 이미지|apache/airflow:2.8.0|
+|AIRFLOW_UID|Airflow 컨테이너를 실행할 사용자의 UID이다. 호스트에서 폴더를 매핑할 때와 같이 기본 Airflow UID가 아닌 UID를 사용하려면 이를 재정의해야 한다. (예: `id -u` 호출 결과로 설정해야 한다.) UID가 변경되면 컨테이너 내에서 해당 UID의 기본 이름을 가진 사용자가 생성되며, 사용자의 홈 디렉토리는 `/airflow/home/`으로 설정되어 그곳에 설치된 Python 라이브러리를 공유할 수 있다. 이는 OpenShift 호환성을 달성하기 위함이다. [임의의 Docker 사용자](https://airflow.apache.org/docs/docker-stack/entrypoint.html#arbitrary-docker-user)에서 더 자세한 내용을 확인하라.|`50000`|
+
+> 주의
+>
+> Airflow 2.2 이전에 Docker Compose에는 AIRFLOW_GID 매개변수도 있었지만, 이는 추가적인 기능을 제공하지 않았고, 혼란만을 가져다주었기 때문에 제거되었다.
+
+이러한 추가 변수들은 Docker Compose를 통해 Airflow 설치를 시도하거나 테스트하는 경우 유용하다.
+이들은 프로덕션 환경에서 사용하도록 의도된 것이 아니지만, 가장 일반적인 사용자 지정을 가진 초보자에게 환경을 빠르게 초기화하는 데 도움을 준다.
+
+|Variable|Description|Default|
+|--------|-----------|-------|
+|`_AIRFLOW_WWW_USER_USERNAME`|관리자 UI 계정의 사용자 이름이다. 이 값이 지정되면, 관리자 UI 사용자가 자동으로 생성된다. 이는 Airflow를 테스트하고 개발용 데이터베이스가 포함된 컨테이너를 시작하려는 경우에만 유용하다.|airflow|
+|`_AIRFLOW_WWW_USER_PASSWORD`|관리자 UI 계정의 비밀번호이다. `_AIRFLOW_WWW_USER_USERNAME`이 설정될 때만 사용된다.|airflow|
+|`_PIP_ADDITIONAL_REQUIREMENTS`|비어 있지 않으면, airflow 컨테이너는 변수에 지정된 요구사항을 설치하려고 시도한다(예: `lxml==4.6.3 charset-normalizer==1.4.1.`). Airflow 이미지 2.1.1 이상에서 사용할 수 있다.||
