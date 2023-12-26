@@ -145,7 +145,7 @@ sudo docker run hello-world
 - 기본적으로 스크립트는 Docker, containerd, runc의 최신 안정적인 버전을 설치한다. 이 스크립트를 사용하여 기계를 프로비저닝할 때, 이로 인해 Docker의 예상치 않은 주요 버전 업그레이드가 발생할 수 있다. 제품 시스템에 배포하기 전에 항상 테스트 환경에서 업그레이드를 테스트하라.
 - 스크립트는 기존의 Docker 설치를 업그레이드하는 데 설계되지 않았다. 스크립트를 사용하여 기존 설치를 업데이트할 때, 종속성이 예상한 버전으로 업데이트되지 않을 수 있어 오래된 버전이 설치될 수 있다.
 ***
-아래 예시는 (https://get.docker.com/)에서 스크립트를 다운로드하고 최신의 stable 버전의 도커를 설치하는 예시이다.
+아래 예시는 (https://get.docker.com/) 에서 스크립트를 다운로드하고 최신의 stable 버전의 도커를 설치하는 예시이다.
 ```
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
@@ -169,3 +169,17 @@ sudo sh test-docker.sh
 ```
 
 ### Upgrade Docker after using the convenience script
+편의 스크립트를 사용하여 도커를 설치했다면 패키지 관리자를 직접 사용하여 도커를 업그레이드해야 한다.
+편의 스크립트를 다시 실행하는 것에는 장점이 없다.
+이미 호스트 머신에 존재하는 저장소를 다시 설치하려고 시도하면 문제가 발생할 수 있다.
+
+# Uninstall Docker Engine
+1. 도커 엔진, CLI, containerd, and Docker Compose packages를 해제한다.
+```
+sudo apt-get purge docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
+```
+2. 이미지, 컨테이너, 볼륨, 사용자 설정 파일은 자동으로 제거되지 않는다. 수동으로 삭제해야 한다.
+```
+sudo rm -rf /var/lib/docker
+sudo rm -rf /var/lib/containerd
+```
