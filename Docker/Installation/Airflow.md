@@ -26,6 +26,8 @@
 > macOS에서 도커의 기본 메모리 할당량은 Airflow를 작동시키기에 충분하지 않을 수 있다.
 > 충분한 메모리가 할당되지 않으면, 웹서버가 계속해서 재시작하는 원인이 될 수 있다.
 > 도커 엔진에는 적어도 4GB의 메모리를 할당해야 한다(가능하면 8GB).
-
+>
 > 아래 명령을 실행하여 충분한 메모리가 있는지 확인할 수 있다.
-> ```docker run --rm "debian:bullseye-slim" bash -c 'numfmt --to iec $(echo $(($(getconf _PHYS_PAGES) * $(getconf PAGE_SIZE))))'```
+> ```
+> docker run --rm "debian:bullseye-slim" bash -c 'numfmt --to iec $(echo $(($(getconf _PHYS_PAGES) * $(getconf PAGE_SIZE))))'
+> ```
