@@ -157,7 +157,7 @@ Executing docker install script, commit: 7cae5f8b0decc17d6571f9f52eb840fbc13b273
 메시지가 나타내는대로, 기본적으로 권한 없는 사용자는 도커 명령을 실행할 수 없다.
 
 ### Install pre-releases
-도커는 Linux에 도커의 사전 릴리스를 설치하기 위한 편의 스크립트도 (https://test.docker.com/)에서 제공한다. 
+도커는 Linux에 도커의 사전 릴리스를 설치하기 위한 편의 스크립트도 (https://test.docker.com/) 에서 제공한다. 
 이 스크립트는 get.docker.com의 스크립트와 동일하지만, 패키지 관리자를 도커 패키지 저장소의 테스트 채널을 사용하도록 설정한다.
 테스트 채널에는 도커의 안정된 버전과 사전 릴리스(베타 버전, 릴리스 후보)가 모두 포함되어 있다. 
 이 스크립트를 사용하여 새 릴리스에 빠르게 접근하고, stable 버전으로 출시되기 전에 테스트 환경에서 그것들을 사용하라.
