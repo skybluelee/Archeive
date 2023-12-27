@@ -33,6 +33,13 @@ webdriver_manager
 curl -LfO 'https://airflow.apache.org/docs/apache-airflow/2.8.0/docker-compose.yaml'
 ```
 
+# Dockerfile 생성
+```
+FROM apache/airflow:2.8.0
+COPY requirements.txt /
+RUN pip install --no-cache-dir -r /requirements.txt
+```
+
 # `docker-compose.yaml` 파일 수정하기
 ## **이미지 이름 변경**
 ```
