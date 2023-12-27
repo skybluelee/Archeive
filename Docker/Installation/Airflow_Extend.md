@@ -17,6 +17,20 @@ REPOSITORY                   TAG       IMAGE ID       CREATED      SIZE
 selenium/standalone-chrome   latest    fe7a24405507   7 days ago   1.22GB
 ```
 
+# 디렉토리와 권한 설정하기
+```
+mkdir -p ./dags ./logs ./plugins ./config
+echo -e "AIRFLOW_UID=$(id -u)" > .env
+```
+```
+$ ls -l
+
+drwxrwxr-x 2 ubuntu ubuntu  4096 Dec 27 14:35 config
+drwxrwxr-x 2 ubuntu ubuntu  4096 Dec 27 14:35 dags
+drwxrwxr-x 2 ubuntu ubuntu  4096 Dec 27 14:35 logs
+drwxrwxr-x 2 ubuntu ubuntu  4096 Dec 27 14:35 plugins
+```
+
 # `requirements.txt` 작성하기
 ```
 vi requirements.txt
