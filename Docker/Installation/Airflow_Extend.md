@@ -40,7 +40,7 @@ x-airflow-common:
   &airflow-common
   # 기존 이미지
   # image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.8.0}
-  image: ${AIRFLOW_IMAGE_NAME:--extend_airflow:latest}
+  image: ${AIRFLOW_IMAGE_NAME:-extend_airflow:latest}
 ```
 사용할 이미지로 변경한다.
 
@@ -57,10 +57,10 @@ x-airflow-common:
 ## **볼륨 위치 변경**
 ```
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-.}/dags:/home/ubuntu/airflow/airflow/dags
-    - ${AIRFLOW_PROJ_DIR:-.}/logs:/home/ubuntu/airflow/airflow/logs
-    - ${AIRFLOW_PROJ_DIR:-.}/config:/home/ubuntu/airflow/airflow/config
-    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/home/ubuntu/airflow/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR:-.}/dags:/home/ubuntu/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/logs:/home/ubuntu/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-.}/config:/home/ubuntu/airflow/config
+    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/home/ubuntu/airflow/plugins
 ```
 기존의 `opt/airflow/airflow/dags`는 해당 디렉토리가 존재하지 않으므로 적절하게 수정한다.
 
