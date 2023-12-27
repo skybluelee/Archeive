@@ -77,7 +77,7 @@ default_args에서 정의된 것이 먼저 사용되고, 이후에 operator의 �
 ```
 import pendulum
 
-from airflow import DAG
+from airflow.models.dag import DAG
 from airflow.example_dags.plugins.workday import AfterWorkdayTimetable
 
 
