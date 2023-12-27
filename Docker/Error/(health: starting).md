@@ -16,7 +16,7 @@ docker events
 
 3. **재시작**: 문제가 발생하는 컨테이너를 중지한 후 재시작한다.
 ```
-docker restart [CONTAINER_ID]
+docker restart <CONTAINER_ID>
 ```
 
 4. **Docker 상태 확인**: Docker의 전반적인 상태를 확인하여 문제를 확인한다.
