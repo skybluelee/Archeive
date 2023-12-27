@@ -96,10 +96,11 @@ echo -e "AIRFLOW_UID=$(id -u)" > .env
 [도커 컴포즈 환경 변수](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#docker-compose-env-variables)를 확인하라.
 
 다른 작업 시스템에서 `AIRFLOW_UID`가 설정되지 않았다는 경고를 받을 수도 있으나, 무시해도 된다.
-```
+
 `docker-compose.yaml` 파일이 있는 디렉토리에 `.env` 파일을 생성하여 이 경고를 제거할 수 있다.
 ```
 AIRFLOW_UID=50000
+```
 
 ### Initialize the database
 모든 작업 시스템에서 데이터베이스 마이그레이션을 실행하고 사용자 계정을 생성해야 한다.
