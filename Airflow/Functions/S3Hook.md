@@ -135,8 +135,8 @@ with DAG(
 ):
     def s3_download():
         # 버킷과 키 이름 설정
-        bucket_name = "news-data"
-        key = 'test.txt'
+        bucket_name = "<bucket_name>"
+        key = "<key_name>"
         # 다운받을 위치
         local_file_path = "/opt/airflow/dags"
         hook = S3Hook(aws_conn_id='aws_conn')
