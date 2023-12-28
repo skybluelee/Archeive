@@ -16,8 +16,11 @@ IAM -> 사용자 -> 사용자 생성 -> S3에 대한 권한 설정 -> Access Key
 
 이후 Airflow Web UI -> Connections 추가
 > Connection Id: `S3Hook`에서 사용할 `aws_conn_id` 인자
+> 
 > Connection Type: Amazon Web Services
+> 
 > AWS Access Key Id: 발급한 access key
+> 
 > AWS Secret Access Key: 발급한 secret key
 
 ### transfer_config_args
