@@ -72,12 +72,17 @@ S3 전송중 동시성을 구현하는 경우 스레드를 사용한다.
 ### extra_args
 **업로드의 경우**
 ```
-ALLOWED_UPLOAD_ARGS = ['ACL', 'CacheControl', 'ChecksumAlgorithm', 'ContentDisposition', 'ContentEncoding', 'ContentLanguage', 'ContentType', 'ExpectedBucketOwner', 'Expires', 'GrantFullControl', 'GrantRead', 'GrantReadACP', 'GrantWriteACP', 'Metadata', 'ObjectLockLegalHoldStatus', 'ObjectLockMode', 'ObjectLockRetainUntilDate', 'RequestPayer', 'ServerSideEncryption', 'StorageClass', 'SSECustomerAlgorithm', 'SSECustomerKey', 'SSECustomerKeyMD5', 'SSEKMSKeyId', 'SSEKMSEncryptionContext', 'Tagging', 'WebsiteRedirectLocation']
+ALLOWED_UPLOAD_ARGS = ['ACL', 'CacheControl', 'ChecksumAlgorithm', 'ContentDisposition', 'ContentEncoding', 'ContentLanguage',
+'ContentType', 'ExpectedBucketOwner', 'Expires', 'GrantFullControl', 'GrantRead', 'GrantReadACP', 'GrantWriteACP', 'Metadata',
+'ObjectLockLegalHoldStatus', 'ObjectLockMode', 'ObjectLockRetainUntilDate', 'RequestPayer', 'ServerSideEncryption',
+'StorageClass', 'SSECustomerAlgorithm', 'SSECustomerKey', 'SSECustomerKeyMD5', 'SSEKMSKeyId', 'SSEKMSEncryptionContext',
+'Tagging', 'WebsiteRedirectLocation']
 ```
 ***
 **다운로드의 경우**
 ```
-ALLOWED_DOWNLOAD_ARGS = ['ChecksumMode', 'VersionId', 'SSECustomerAlgorithm', 'SSECustomerKey', 'SSECustomerKeyMD5', 'RequestPayer', 'ExpectedBucketOwner']
+ALLOWED_DOWNLOAD_ARGS = ['ChecksumMode', 'VersionId', 'SSECustomerAlgorithm', 'SSECustomerKey', 'SSECustomerKeyMD5',
+'RequestPayer', 'ExpectedBucketOwner']
 ```
 
 ## Example - Upload
