@@ -1,8 +1,3 @@
-# Extend Library
-크롤링을 위해 selenium과 webdriver_manager를 extend했다.
-
-해당 모듈은 PythonOperator에서 사용한다.
-
 # 셀레니움 이미지 다운로드
 Airflow에서 selenium을 사용하기 위해서는 selenium 이미지를 Airflow의 Dockerfile에서 지정해야 한다.
 
@@ -22,6 +17,9 @@ selenium/standalone-chrome   latest    fe7a24405507   7 days ago   1.22GB
 mkdir -p ./dags ./logs ./plugins ./config
 echo -e "AIRFLOW_UID=$(id -u)" > .env
 ```
+docker-compose.yaml 파일에서 `volumes: - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags`에 해당하는 디렉토리를 생성한다.
+
+해당 디렉토리가 없다면 docker compose up 과정에서 오류가 발생한다.
 ```
 $ ls -l
 
