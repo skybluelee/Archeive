@@ -144,3 +144,5 @@ Dockerfile  config  dags  docker-compose.yaml  logs  plugins  requirements.txt
 기존의 docker-compose.yaml, requirements.txt, Dockerfile 이외에 config, dags, logs, plugins 디렉토리가 추가되었다.
 # 보안 규칙 추가
 Airflow의 포트는 8080으로 보안 그룹의 인바운드 규칙에 8080 포트를 추가한다.
+
+Selenium은 4444포트를 사용하므로 인바운드 규칙에 4444 포트를 추가한다.
