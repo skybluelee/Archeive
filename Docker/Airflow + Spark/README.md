@@ -118,6 +118,15 @@ docker compose up -d
 ```
 Airflow 이미지를 extend하고 해당 이미지를 `docker-compose.yaml`에서 지정하여 사용한다.
 
+# Spark Connection
+> Connection id: DAG SparkSubmitOperator에 있는 conn_id
+>
+> Connection type: Spark
+>
+> HOST: localhost:8088에서 확인. 나의 경우 spark://spark
+>
+> PORT: 7077
+
 # 자주 사용하는 명령어
 ```
 docker ps
