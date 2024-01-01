@@ -117,3 +117,23 @@ docker build . --tag airflow_extend:latest
 docker compose up -d
 ```
 Airflow 이미지를 extend하고 해당 이미지를 `docker-compose.yaml`에서 지정하여 사용한다.
+
+# 자주 사용하는 명령어
+```
+docker ps
+
+docker rm
+docker rmi -f
+
+docker build . --tag airflow_extend:latest
+docker compose up -d
+docker compose down
+
+docker exec -it <container_name> bash
+
+docker exec -it <spark_master_container_name> \
+    spark-submit --master spark://spark:7077 \
+    /usr/local/spark/app/script.py
+
+docker system prune -a -f --volumes
+```
