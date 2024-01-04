@@ -3,7 +3,7 @@
 # S3 버킷을 트리거로 설정
 기존에 버킷이 존재하는 상태에서 시작한다.
 
-<img src="https://github.com/skybluelee/Archeive/assets/107929903/69ea80fe-1f36-408f-9017-76661a03d7a8.png" width="800" height="400"/>
+<img src="https://github.com/skybluelee/Archeive/assets/107929903/69ea80fe-1f36-408f-9017-76661a03d7a8.png" width="1000" height="400"/>
 
 좌측에 소스를 S3로 정한 후, 사용할 버킷을 설정한다. 이벤트 타입은 객체가 추가되거나 업데이트되는 경우에만 OpenSearch로 보내기위해 PUT으로 지정하였다.
 
