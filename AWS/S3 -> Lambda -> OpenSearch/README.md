@@ -52,6 +52,9 @@ zip -r requests_aws4auth.zip ./python
 
 2개의 계층을 생성하고 Lambda 함수 내에서 계층 -> [Add a layer]를 클릭하여 생성한 계층을 추가한다.
 
+## 로그
+Lambda에 대한 로그는 Cloudwatch -> 로그 -> 로그 그룹 에서 확인할 수 있다.
+
 # OpenSearch
 ## 생성
 OpenSearch를 생성한다. 생성시 표준 생성으로 들어가야 더 저렴한 인스턴스, 적은 용량 등을 선택하여 비용을 줄일 수 있다.
@@ -104,3 +107,14 @@ OpenSearch를 생성한다. 생성시 표준 생성으로 들어가야 더 저�
 이와 같이 사용하는 이유는 OpenSearch 내부에서는 사용자를 생성할 때 `:`를 사용하지 못하기 때문이다.
 
 이후 OpenSearch에서 Security -> Roles -> all_access -> Mapped users를 방문하면 arn:aws:iam::1234567890:user/<iam_user_name> 형태의 사용자와 최초에 만든 마스터 사용자가 등록되어 있을 것이다.
+
+세분화된 액세스 제어를 선택하였기 때문에 모든 접근이 허가되어 있다. 보안을 위해 해당 정책을 적절히 변경해야 한다.
+
+# 참고
+**[AWS Lambda Layers로 함수 공통용 Python 패키지 재사용하기](https://beomi.github.io/2018/11/30/using-aws-lambda-layers-on-python3/)**
+
+**[[AWS] Lambda에 request 모듈 추가하기](https://velog.io/@jadenchoi94/AWS-Lambda%EC%97%90-request-%EB%AA%A8%EB%93%88-%EC%B6%94%EA%B0%80%ED%95%98%EA%B8%B0)**
+
+**[Amazon OpenSearch Service에서 HTTP 요청 압축](https://docs.aws.amazon.com/ko_kr/opensearch-service/latest/developerguide/gzip.html)**
+
+**[스트리밍 데이터를 Amazon OpenSearch 서비스에 로드](https://docs.aws.amazon.com/ko_kr/opensearch-service/latest/developerguide/integrations.html)**
