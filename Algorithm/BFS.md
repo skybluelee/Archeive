@@ -135,7 +135,7 @@ def solution(land):
     answer = max(col_num) 
     return answer
 ```
-## 구역 찾기 - 2
+# 구역 찾기 - 2
 ## 문제
 [무인도 여행](https://school.programmers.co.kr/learn/courses/30/lessons/154540)
 ### 문자열 변환
