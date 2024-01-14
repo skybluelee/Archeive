@@ -4,7 +4,7 @@ queue 내부에 기존의 중복값이 존재하는 경우 queue를 사용하더
 ## 문제
 [숫자 변환하기](https://school.programmers.co.kr/learn/courses/30/lessons/154538)
 
-## set을 사용한 중복값 제거
+### set을 사용한 중복값 제거
 ```
 num_set = set()
 
@@ -15,7 +15,7 @@ else:
 ```
 set 이외에도 딕셔너리나 리스트를 사용할 수도 있다.
 
-## 전체 코드
+### 전체 코드
 ```
 from collections import deque
 def solution(x, y, n):
