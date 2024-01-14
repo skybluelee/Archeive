@@ -1,13 +1,12 @@
-임시 readme.md 파일로 방식은 추후에 결정
-## 길찾기
-### 문제
+# 길찾기
+## 문제
 [리코쳇 로봇](https://school.programmers.co.kr/learn/courses/30/lessons/169199)
-#### 1. 주어진 크기 만큼의 list 생성 -> 동작 check
+### 1. 주어진 크기 만큼의 list 생성 -> 동작 check
 ```
 graph = [[0]*세로 for i in range(가로)]
 graph[시작][위치] = 1
 ```
-#### 2. queue 생성, 상하좌우 설정
+### 2. queue 생성, 상하좌우 설정
 ```
 from collections import deque
 queue = deque()
@@ -16,7 +15,7 @@ queue.append((0, 6, 0)) # 시작 위치의 좌표와 움직인 횟수를 추가�
 dx = [-1, 1, 0, 0] # up, down
 dy = [0, 0, -1, 1] # left, right
 ```
-#### 3. queue가 존재할 때까지 반복
+### 3. queue가 존재할 때까지 반복
 
 ```
 while queue:
@@ -24,7 +23,7 @@ while queue:
 	return answer
 return -1
 ```
-#### 4. queue에서 원하는 값이 나오도록 설정
+### 4. queue에서 원하는 값이 나오도록 설정
 ```
 px, py, cnt = queue.popleft() # 현재 위치와 움직인 횟수
 if board[px][py] == 'G': # 목표 지점에 도달
@@ -46,7 +45,7 @@ for i in range(4):
 		graph[nx][ny] = 1
 		queue.append((nx, ny, cnt + 1))
 ```
-#### 전체 코드
+### 전체 코드
 ```
 from collections import deque
 
@@ -87,10 +86,10 @@ def solution(board):
                 queue.append((nx, ny, cnt+1))
     return -1
 ```
-## 구역 찾기
-### 문제
+# 구역 찾기
+## 문제
 [석유 시추](https://school.programmers.co.kr/learn/courses/30/lessons/250136)
-#### 전체 코드
+### 전체 코드
 ```
 from collections import deque
 
