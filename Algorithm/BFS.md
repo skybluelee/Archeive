@@ -135,10 +135,10 @@ def solution(land):
     answer = max(col_num) 
     return answer
 ```
-## 구역 찾기
-### 문제
+## 구역 찾기 - 2
+## 문제
 [무인도 여행](https://school.programmers.co.kr/learn/courses/30/lessons/154540)
-#### 문자열 변환
+### 문자열 변환
 ```
 # maps = ["X591X","X1X5X","X231X", "1XXX1"]
 new_maps = []
@@ -146,7 +146,7 @@ for map_str in maps:
     new_maps.append(list(map_str))
 ```
 사용하기 편하게 미리 list로 변형
-#### 전체 코드
+### 전체 코드
 ```
 from collections import deque
 
@@ -188,51 +188,4 @@ def solution(maps):
                 queue = deque()
     
     return sorted(answer) if answer else [-1]
-```
-
-## 중복 값 제거
-queue 내부에 기존의 중복값이 존재하는 경우 효율성에 문제가 발생할 가능성이 있음
-
-### 문제
-[숫자 변환하기](https://school.programmers.co.kr/learn/courses/30/lessons/154538)
-
-### set을 사용한 중복값 제거
-set 이외에도 딕셔너리나 리스트를 사용할 수도 있음.
-
-#### 전체 코드
-```
-from collections import deque
-def solution(x, y, n):
-    num_set = set()
-    answer = -1
-    
-    if x == y:
-        return 0
-    
-    queue = deque()
-    queue.append([x,0])
-    
-    while queue:
-        temp = queue.popleft()
-        num, cnt = temp[0], temp[1]
-        cnt += 1
-        
-        num1 = num + n
-        num2 = num * 2
-        num3 = num * 3        
-        
-        if y in [num1, num2, num3]:
-            answer = cnt
-            break
-        else:
-            if num1 < y and num1 not in num_set:
-                num_set.add(num1)
-                queue.append([num1, cnt])
-            if num2 < y and num2 not in num_set:
-                num_set.add(num2)
-                queue.append([num2, cnt])
-            if num3 < y and num3 not in num_set:
-                num_set.add(num3)
-                queue.append([num3, cnt])
-    return answer
 ```
