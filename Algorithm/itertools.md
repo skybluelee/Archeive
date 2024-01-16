@@ -40,11 +40,11 @@ numbers = [1, 2]
 cartesian_product = product(numbers, repeat=2)
 # (1, 1), (1, 2), (2, 1), (2, 2)
 ```
-조합과 순열과 다르게 repeat인자에 바로 숫자를 넣을 수 없고 `repeat=n`으로 지정해야 한다.
+조합과 순열과 다르게 가변인자가 존재하므로 `repeat=n`으로 지정해야 한다.
 
 product를 사용하여 모든 경우의 수를 얻을 수 있다.
 
-#. **`count(start=0, step=1)` - 무한한 수열 생성:**
+# **`count(start=0, step=1)` - 무한한 수열 생성:**
 ```
 from itertools import count
 
