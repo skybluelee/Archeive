@@ -19,7 +19,7 @@ from itertools import permutations
 data = [1, 2, 3]
 
 nPr = permutations(data, r=2)
-# (1, 2), (1, 3) ,(2, 1) ,(2, 3) ,(3, 1) ,(3, 2)
+# (1, 2), (1, 3), (2, 1), (2, 3), (3, 1), (3, 2)
 ```
 
 # **`product(*iterables, repeat=1)` - 카르테시안 곱 생성:**
@@ -30,7 +30,7 @@ from itertools import product
 numbers = [1, 2, 3]
 colors = ['red', 'green']
 cartesian_product = product(numbers, colors)
-# (1, 'red') ,(1, 'green') ,(2, 'red') ,(2, 'green') ,(3, 'red') ,(3, 'green')
+# (1, 'red'), (1, 'green'), (2, 'red'), (2, 'green'), (3, 'red'), (3, 'green')
 ```
 ## 하나의 iterable에 대해 생성하는 경우
 ```
@@ -38,7 +38,7 @@ from itertools import product
 
 numbers = [1, 2]
 cartesian_product = product(numbers, repeat=2)
-# (1, 1) ,(1, 2) ,(2, 1) ,(2, 2)
+# (1, 1), (1, 2), (2, 1), (2, 2)
 ```
 조합과 순열과 다르게 repeat인자에 바로 숫자를 넣을 수 없고 `repeat=n`으로 지정해야 한다.
 
