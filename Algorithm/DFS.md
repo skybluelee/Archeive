@@ -192,3 +192,43 @@ def solution(users, emoticons):
             
     return answer
 ```
+
+# 개수가 계속해서 늘어나는 경우
+
+## 문제
+[유사 칸토어 비트열](https://school.programmers.co.kr/learn/courses/30/lessons/148652)
+**출처: [IceIsAmericano](https://americanoisice.tistory.com/202)**
+
+### 간단 설명
+```
+# 1
+# 11011
+# 1101111011000001101111011
+```
+숫자는 5^0 -> 5^1 -> ... 의 순으로 증가하며, 이때 1의 개수를 구하는 문제이다.
+
+원리는 최종 숫자를 5파트로 나누어가며 5^n -> 5^(n-1) -> ... 순으로 줄여나가는 방식이다.
+
+### 전체 코드
+```
+# 1
+# 11011
+# 1101111011000001101111011
+def recursion(n,pos):
+    if n == 1:
+        return "11011"[:pos].count("1")
+    a, b = divmod(pos, 5 ** (n-1))
+    cnt = 0
+    if a <= 1:
+        cnt = 4**(n-1) * a + recursion(n-1,b)        
+    if a == 2:
+        cnt = 2 * 4**(n-1)
+    if a > 2:
+        cnt = 4**(n-1) * (a-1) + recursion(n-1,b)
+    return cnt
+    
+def solution(n, l, r):
+    #f(n) = f(n-1)f(n-1)00000f(n-1)f(n-1)
+    answer = recursion(n,r) - recursion(n,l-1)
+    return answer
+```
