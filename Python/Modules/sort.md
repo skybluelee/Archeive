@@ -25,3 +25,13 @@ sorted_list = sorted(data, key=lambda x: (x[1], -x[0]))
 
 ## reverse
 boolean값으로 default값은 false. true로 설정시 반대로 정렬한다.
+
+# dictionary sort
+## value 기준으로 정렬
+```
+my_dict = {'a': 4, 'b': 3, 'c': 2, 'd': 1}
+
+sorted_dict = dict(sorted(my_dict.items(), key=lambda item: item[1]))
+
+# sorted_dict: {'d': 1, 'c': 2, 'b': 3, 'a': 4}
+```
